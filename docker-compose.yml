@@ -1,0 +1,10 @@
+version: "2"
+
+services:
+    server:
+        build:
+            context: ./
+            dockerfile: Dockerfile
+        env_file: .env
+        ports:
+            - 8091:80
