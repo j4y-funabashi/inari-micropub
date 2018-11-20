@@ -1,10 +1,16 @@
 version: "2"
 
 services:
-    server:
+    mpserver:
         build:
             context: ./
-            dockerfile: Dockerfile
         env_file: .env
         ports:
             - 8091:80
+
+    tests:
+        depends_on:
+            - mpserver
+        build:
+            context: ./
+        entrypoint: ["go", "test", "./..."]
