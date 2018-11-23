@@ -9,35 +9,54 @@ import (
 	"github.com/matryer/is"
 )
 
-func TestMicropub(t *testing.T) {
+func TestFormEncodedMicropub(t *testing.T) {
+
 	var tests = []struct {
 		name string
+		data map[string]string
 	}{
-		{"HORSAEHIDREERCHICKEN"},
+		{
+			name: "create: happy path",
+			data: map[string]string{
+				"uid": "testuuid",
+			},
+		},
 	}
+
+	endpointURL := "http://mpserver/"
+	contentType := "application/x-www-form-urlencoded"
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 
+			// arrange
 			is := is.NewRelaxed(t)
-
-			endpointURL := "http://mpserver/"
 
 			httpclient := &http.Client{}
 			data := url.Values{}
-			data.Set("uid", "testuuid")
-			req, err := http.NewRequest("POST", endpointURL, strings.NewReader(data.Encode()))
+			for k, v := range tt.data {
+				data.Set(k, v)
+			}
+
+			req, err := http.NewRequest(
+				"POST",
+				endpointURL,
+				strings.NewReader(data.Encode()),
+			)
 			if err != nil {
 				t.Fatalf("failed to build Request %s", err.Error())
 			}
-			req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			req.Header.Add("Content-Type", contentType)
+
+			// act
 			resp, err := httpclient.Do(req)
 			if err != nil {
 				t.Fatalf("failed to make Request %s", err.Error())
 			}
 
+			// assert
 			is.Equal(202, resp.StatusCode)
-			is.Equal("https://jay.funabashi.co.uk/p/testuuid", resp.Header.Get("Location"))
+			is.True(resp.Header.Get("Location") != "")
 
 		})
 	}

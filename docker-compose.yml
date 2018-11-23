@@ -4,6 +4,8 @@ services:
     mpserver:
         build:
             context: ./
+        environment:
+            S3_ENDPOINT: "http://localstack:4572"
         env_file: .env
         ports:
             - 8091:80

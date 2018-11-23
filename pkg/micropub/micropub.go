@@ -15,7 +15,7 @@ import (
 
 type Server struct {
 	mediaEndpoint   string
-	createPostEvent func(mf mf2.MicroFormat) error
+	createPostEvent func(mf mf2.PostCreatedEvent) error
 	logger          *logrus.Logger
 }
 
@@ -25,7 +25,11 @@ type HttpResponse struct {
 	Headers    map[string]string
 }
 
-func NewServer(mediaEndpoint string, logger *logrus.Logger, createPost func(mf mf2.MicroFormat) error) Server {
+func NewServer(
+	mediaEndpoint string,
+	logger *logrus.Logger,
+	createPost func(event mf2.PostCreatedEvent) error,
+) Server {
 	return Server{
 		mediaEndpoint:   mediaEndpoint,
 		createPostEvent: createPost,
@@ -34,13 +38,13 @@ func NewServer(mediaEndpoint string, logger *logrus.Logger, createPost func(mf m
 }
 
 func (s Server) Routes(router *mux.Router) {
-	router.HandleFunc("/", s.handleMicropub())
+	baseURL := "https://jay.funabashi.co.uk/"
+	router.HandleFunc("/", s.handleMicropub(baseURL))
 }
 
-func (s Server) handleMicropub() http.HandlerFunc {
+func (s Server) handleMicropub(baseURL string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
-		baseUrl := "https://jay.funabashi.co.uk/"
 		authToken := r.Header.Get("Authorization")
 		contentType := r.Header.Get("Content-Type")
 		authorURL := "http:/jay.example.com"
@@ -59,7 +63,7 @@ func (s Server) handleMicropub() http.HandlerFunc {
 		if r.Method == "POST" {
 
 			response = s.CreatePost(
-				baseUrl,
+				baseURL,
 				authToken,
 				contentType,
 				authorURL,
@@ -99,7 +103,7 @@ func (s Server) QueryConfig() HttpResponse {
 }
 
 func (s Server) CreatePost(
-	baseUrl,
+	baseURL,
 	authToken,
 	contentType,
 	authorURL,
@@ -124,13 +128,15 @@ func (s Server) CreatePost(
 	if mf.GetFirstString("uid") != "" {
 		uuid = mf.GetFirstString("uid")
 	}
-	postUrl := strings.TrimRight(baseUrl, "/") + "/p/" + uuid
+	postUrl := strings.TrimRight(baseURL, "/") + "/p/" + uuid
 	mf.SetDefaults(authorURL, uuid, postUrl)
 	s.logger.
 		WithField("mf", mf).
 		Info("mf built")
 
-	err = s.createPostEvent(mf)
+	event := mf2.NewPostCreated(mf)
+
+	err = s.createPostEvent(event)
 	if err != nil {
 		s.logger.WithError(err).Error("failed to save post")
 		return HttpResponse{

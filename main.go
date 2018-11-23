@@ -5,8 +5,8 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
-	"github.com/j4y_funabashi/inari-micropub/pkg/mf2"
 	"github.com/j4y_funabashi/inari-micropub/pkg/micropub"
+	"github.com/j4y_funabashi/inari-micropub/pkg/s3"
 	"github.com/sirupsen/logrus"
 )
 
@@ -19,15 +19,23 @@ func main() {
 	logger := logrus.New()
 	logger.Formatter = &logrus.JSONFormatter{}
 	router := mux.NewRouter()
-	createPost := func(mf mf2.MicroFormat) error {
-		return nil
-	}
+
+	// s3 saver
+	s3Endpoint := os.Getenv("S3_ENDPOINT")
+	S3KeyPrefix := os.Getenv("S3_EVENTS_KEY")
+	S3Bucket := os.Getenv("S3_EVENTS_BUCKET")
+	saveEvent := s3.NewSaver(
+		logger,
+		s3Endpoint,
+		S3KeyPrefix,
+		S3Bucket,
+	)
 
 	mediaURL := os.Getenv("MEDIA_ENDPOINT")
 	micropubServer := micropub.NewServer(
 		mediaURL,
 		logger,
-		createPost,
+		saveEvent,
 	)
 	micropubServer.Routes(router)
 

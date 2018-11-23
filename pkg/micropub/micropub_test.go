@@ -28,7 +28,7 @@ func TestMicropubQuery(t *testing.T) {
 			mpServer := micropub.NewServer(
 				mediaURL,
 				logger,
-				func(mf mf2.MicroFormat) error { return nil },
+				func(mf mf2.PostCreatedEvent) error { return nil },
 			)
 
 			// act
@@ -44,24 +44,26 @@ func TestMicropubQuery(t *testing.T) {
 
 func TestCreatePost(t *testing.T) {
 	var tests = []struct {
-		name        string
-		authorURL   string
-		contentType string
-		body        string
-		expectedMF  mf2.MicroFormat
+		name          string
+		authorURL     string
+		contentType   string
+		body          string
+		expectedEvent mf2.PostCreatedEvent
 	}{
 		{
 			name:        "form values: happy path",
 			authorURL:   "https://jay.funabashi.co.uk/",
 			contentType: "application/x-www-form-urlencoded",
 			body:        "uid=horse&published=2012-01-28",
-			expectedMF: mf2.MicroFormat{
-				Type: []string{"h-entry"},
-				Properties: map[string][]interface{}{
-					"author":    []interface{}{"https://jay.funabashi.co.uk/"},
-					"uid":       []interface{}{"horse"},
-					"published": []interface{}{"2012-01-28"},
-					"url":       []interface{}{"http://example.com/p/horse"},
+			expectedEvent: mf2.PostCreatedEvent{
+				EventData: mf2.MicroFormat{
+					Type: []string{"h-entry"},
+					Properties: map[string][]interface{}{
+						"author":    []interface{}{"https://jay.funabashi.co.uk/"},
+						"uid":       []interface{}{"horse"},
+						"published": []interface{}{"2012-01-28"},
+						"url":       []interface{}{"http://example.com/p/horse"},
+					},
 				},
 			},
 		},
@@ -70,13 +72,15 @@ func TestCreatePost(t *testing.T) {
 			authorURL:   "https://jay.funabashi.co.uk/",
 			contentType: "application/json",
 			body:        `{"type":["h-entry"], "properties": {"published": ["2012-01-28"], "uid": ["horse"]}}`,
-			expectedMF: mf2.MicroFormat{
-				Type: []string{"h-entry"},
-				Properties: map[string][]interface{}{
-					"author":    []interface{}{"https://jay.funabashi.co.uk/"},
-					"uid":       []interface{}{"horse"},
-					"published": []interface{}{"2012-01-28"},
-					"url":       []interface{}{"http://example.com/p/horse"},
+			expectedEvent: mf2.PostCreatedEvent{
+				EventData: mf2.MicroFormat{
+					Type: []string{"h-entry"},
+					Properties: map[string][]interface{}{
+						"author":    []interface{}{"https://jay.funabashi.co.uk/"},
+						"uid":       []interface{}{"horse"},
+						"published": []interface{}{"2012-01-28"},
+						"url":       []interface{}{"http://example.com/p/horse"},
+					},
 				},
 			},
 		},
@@ -94,9 +98,10 @@ func TestCreatePost(t *testing.T) {
 			baseURL := "http://example.com/"
 			authToken := "testtoken"
 			createPostCount := 0
-			createPostMock := func(mf mf2.MicroFormat) error {
+			createPostMock := func(event mf2.PostCreatedEvent) error {
 				createPostCount++
-				is.Equal(tt.expectedMF, mf)
+				is.Equal(tt.expectedEvent.EventData, event.EventData)
+				is.Equal("PostCreated", event.EventType)
 				return nil
 			}
 

@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/microcosm-cc/bluemonday"
+	uuid "github.com/satori/go.uuid"
 )
 
 func MfFromForm(formData map[string][]string) MicroFormat {
@@ -338,4 +339,20 @@ func normalizeDate(d string) time.Time {
 
 	log.Printf("[E] Could not parse date format [ %v ]", d)
 	return time.Now()
+}
+
+type PostCreatedEvent struct {
+	EventID      string      `json:"eventID"`
+	EventType    string      `json:"eventType"`
+	EventVersion string      `json:"eventVersion"`
+	EventData    MicroFormat `json:"eventData"`
+}
+
+func NewPostCreated(mf MicroFormat) PostCreatedEvent {
+	uid := uuid.NewV4()
+	return PostCreatedEvent{
+		EventID:      uid.String(),
+		EventType:    "PostCreated",
+		EventVersion: time.Now().Format("20060102150405.0000"),
+		EventData:    mf}
 }
