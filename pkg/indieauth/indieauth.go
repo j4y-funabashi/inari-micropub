@@ -46,13 +46,11 @@ func VerifyAccessToken(
 }
 
 type TokenResponse struct {
-	Me               string `json:"me"`
-	ClientID         string `json:"client_id"`
-	Scope            string `json:"scope"`
-	IssuedBy         string `json:"issued_by"`
-	Error            string `json:"error"`
-	ErrorDescription string `json:"error_description"`
-	StatusCode       int
+	Me         string `json:"me"`
+	ClientID   string `json:"client_id"`
+	Scope      string `json:"scope"`
+	IssuedBy   string `json:"issued_by"`
+	StatusCode int
 }
 
 func (tr TokenResponse) IsValid() bool {

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
@@ -15,19 +16,22 @@ import (
 )
 
 func NewSaver(logger *logrus.Logger, s3Endpoint, S3KeyPrefix, S3Bucket string) func(event mf2.PostCreatedEvent) error {
-	disableSSL := false
+
+	sess, _ := session.NewSession(&aws.Config{
+		Region: aws.String(endpoints.EuCentral1RegionID),
+	})
 	if s3Endpoint != "" {
-		disableSSL = true
+		sess, _ = session.NewSession(&aws.Config{
+			Credentials:      credentials.NewStaticCredentials("foo", "var", ""),
+			Region:           aws.String(endpoints.EuCentral1RegionID),
+			Endpoint:         aws.String(s3Endpoint),
+			DisableSSL:       aws.Bool(true),
+			S3ForcePathStyle: aws.Bool(true),
+		})
 	}
 
 	// deps
-	s := session.Must(session.NewSession(&aws.Config{
-		Region:           aws.String(endpoints.EuCentral1RegionID),
-		Endpoint:         aws.String(s3Endpoint),
-		DisableSSL:       aws.Bool(disableSSL),
-		S3ForcePathStyle: aws.Bool(true),
-	}))
-	uploader := s3manager.NewUploader(s)
+	uploader := s3manager.NewUploader(sess)
 
 	return func(event mf2.PostCreatedEvent) error {
 
@@ -42,7 +46,7 @@ func NewSaver(logger *logrus.Logger, s3Endpoint, S3KeyPrefix, S3Bucket string) f
 		}
 		eventData := eventjson.String()
 
-		fileKey := strings.Trim(S3KeyPrefix, "/ ") + "/" + time.Now().Format("2006/") + event.EventID + ".json"
+		fileKey := strings.Trim(S3KeyPrefix, "/ ") + "/" + time.Now().Format("2006/") + event.EventVersion + "_" + event.EventID + ".json"
 
 		_, err = uploader.Upload(&s3manager.UploadInput{
 			Bucket: aws.String(S3Bucket),
