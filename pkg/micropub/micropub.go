@@ -3,6 +3,7 @@ package micropub
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -53,6 +54,8 @@ func (s Server) Routes(router *mux.Router) {
 func (s Server) handleHealthcheck() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "%s", "healthy")
+		return
 	}
 }
 
