@@ -46,8 +46,8 @@ func NewServer(
 
 func (s Server) Routes(router *mux.Router) {
 	baseURL := "https://jay.funabashi.co.uk/"
-	router.HandleFunc("/", s.handleMicropub(baseURL))
 	router.HandleFunc("/health", s.handleHealthcheck())
+	router.HandleFunc("/", s.handleMicropub(baseURL))
 }
 
 func (s Server) handleHealthcheck() http.HandlerFunc {
