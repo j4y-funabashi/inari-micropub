@@ -48,8 +48,6 @@ func (s Server) handleMicropub(baseURL string) http.HandlerFunc {
 		authToken := r.Header.Get("Authorization")
 		contentType := r.Header.Get("Content-Type")
 		authorURL := "http:/jay.example.com"
-		buf := bytes.Buffer{}
-		buf.ReadFrom(r.Body)
 
 		response := HttpResponse{}
 
@@ -62,12 +60,14 @@ func (s Server) handleMicropub(baseURL string) http.HandlerFunc {
 
 		if r.Method == "POST" {
 
+			body := bytes.Buffer{}
+			body.ReadFrom(r.Body)
 			response = s.CreatePost(
 				baseURL,
 				authToken,
 				contentType,
 				authorURL,
-				buf.String(),
+				body.String(),
 			)
 		}
 
