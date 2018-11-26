@@ -21,7 +21,7 @@ func VerifyAccessToken(
 		logger.Errorf("failed to create GET request: %s", err.Error())
 		return TokenResponse{}, err
 	}
-	bearerToken = "Bearer " + strings.Replace(bearerToken, "Bearer", "", -1)
+	bearerToken = "Bearer " + strings.TrimSpace(strings.Replace(bearerToken, "Bearer", "", -1))
 	req.Header.Add("Authorization", bearerToken)
 	req.Header.Add("Accept", "application/json")
 

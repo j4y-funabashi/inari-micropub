@@ -76,6 +76,7 @@ func (s Server) handleMicropub(baseURL string) http.HandlerFunc {
 			return
 		}
 		if tokenRes.IsValid() == false {
+			s.logger.WithField("tokenRes", tokenRes).Info("Invalid token")
 			w.WriteHeader(http.StatusForbidden)
 			return
 		}
