@@ -6,6 +6,7 @@ services:
             context: ./
         environment:
             S3_ENDPOINT: "http://localstack:4572"
+            TOKEN_ENDPOINT: "http://token_mock"
         env_file: .env
         ports:
             - 8091:80
@@ -13,6 +14,8 @@ services:
     tests:
         depends_on:
             - mpserver
+            - localstack
+            - token_mock
         build:
             context: ./
         entrypoint: ["go", "test", "./..."]
@@ -23,3 +26,7 @@ services:
             SERVICES: "s3"
         ports:
             - 4572:4572
+
+    token_mock:
+        build:
+            context: ./mocks/token_endpoint

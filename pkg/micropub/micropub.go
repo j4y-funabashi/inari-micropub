@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/gorilla/mux"
+	"github.com/j4y_funabashi/inari-micropub/pkg/indieauth"
 	"github.com/j4y_funabashi/inari-micropub/pkg/mf2"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
@@ -15,8 +16,10 @@ import (
 
 type Server struct {
 	mediaEndpoint   string
+	tokenEndpoint   string
 	createPostEvent func(mf mf2.PostCreatedEvent) error
 	logger          *logrus.Logger
+	verifyToken     func(tokenEndpoint, bearerToken string, logger *logrus.Logger) (indieauth.TokenResponse, error)
 }
 
 type HttpResponse struct {
@@ -26,14 +29,18 @@ type HttpResponse struct {
 }
 
 func NewServer(
-	mediaEndpoint string,
+	mediaEndpoint,
+	tokenEndpoint string,
 	logger *logrus.Logger,
 	createPost func(event mf2.PostCreatedEvent) error,
+	verifyToken func(tokenEndpoint, bearerToken string, logger *logrus.Logger) (indieauth.TokenResponse, error),
 ) Server {
 	return Server{
 		mediaEndpoint:   mediaEndpoint,
+		tokenEndpoint:   tokenEndpoint,
 		createPostEvent: createPost,
 		logger:          logger,
+		verifyToken:     verifyToken,
 	}
 }
 
@@ -47,7 +54,21 @@ func (s Server) handleMicropub(baseURL string) http.HandlerFunc {
 
 		authToken := r.Header.Get("Authorization")
 		contentType := r.Header.Get("Content-Type")
-		authorURL := "http:/jay.example.com"
+
+		tokenRes, err := s.verifyToken(
+			s.tokenEndpoint,
+			authToken,
+			s.logger,
+		)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to verify token")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		if tokenRes.IsValid() == false {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
 
 		response := HttpResponse{}
 
@@ -64,10 +85,9 @@ func (s Server) handleMicropub(baseURL string) http.HandlerFunc {
 			body.ReadFrom(r.Body)
 			response = s.CreatePost(
 				baseURL,
-				authToken,
 				contentType,
-				authorURL,
 				body.String(),
+				tokenRes,
 			)
 		}
 
@@ -104,10 +124,9 @@ func (s Server) QueryConfig() HttpResponse {
 
 func (s Server) CreatePost(
 	baseURL,
-	authToken,
 	contentType,
-	authorURL,
 	body string,
+	tokenRes indieauth.TokenResponse,
 ) HttpResponse {
 
 	// create uid and post permalink
@@ -129,7 +148,7 @@ func (s Server) CreatePost(
 		uuid = mf.GetFirstString("uid")
 	}
 	postUrl := strings.TrimRight(baseURL, "/") + "/p/" + uuid
-	mf.SetDefaults(authorURL, uuid, postUrl)
+	mf.SetDefaults(tokenRes.Me, uuid, postUrl)
 	s.logger.
 		WithField("mf", mf).
 		Info("mf built")

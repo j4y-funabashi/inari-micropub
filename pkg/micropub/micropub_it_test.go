@@ -25,6 +25,7 @@ func TestFormEncodedMicropub(t *testing.T) {
 
 	endpointURL := "http://mpserver/"
 	contentType := "application/x-www-form-urlencoded"
+	validToken := "test-valid-token"
 	for _, tt := range tests {
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
@@ -47,6 +48,7 @@ func TestFormEncodedMicropub(t *testing.T) {
 				t.Fatalf("failed to build Request %s", err.Error())
 			}
 			req.Header.Add("Content-Type", contentType)
+			req.Header.Add("Authorization", validToken)
 
 			// act
 			resp, err := httpclient.Do(req)

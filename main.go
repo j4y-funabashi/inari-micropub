@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
+	"github.com/j4y_funabashi/inari-micropub/pkg/indieauth"
 	"github.com/j4y_funabashi/inari-micropub/pkg/micropub"
 	"github.com/j4y_funabashi/inari-micropub/pkg/s3"
 	"github.com/sirupsen/logrus"
@@ -31,14 +32,17 @@ func main() {
 		S3Bucket,
 	)
 
+	tokenEndpoint := os.Getenv("TOKEN_ENDPOINT")
 	mediaURL := os.Getenv("MEDIA_ENDPOINT")
 	micropubServer := micropub.NewServer(
 		mediaURL,
+		tokenEndpoint,
 		logger,
 		saveEvent,
+		indieauth.VerifyAccessToken,
 	)
 	micropubServer.Routes(router)
 
-	logger.Info("server running on port " + port)
+	logger.Info("micropub server running on port " + port)
 	logger.Fatal(http.ListenAndServe(":"+port, router))
 }

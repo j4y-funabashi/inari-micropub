@@ -49,7 +49,6 @@ type TokenResponse struct {
 	Me         string `json:"me"`
 	ClientID   string `json:"client_id"`
 	Scope      string `json:"scope"`
-	IssuedBy   string `json:"issued_by"`
 	StatusCode int
 }
 

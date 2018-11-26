@@ -5,6 +5,7 @@ COPY pkg pkg/
 COPY main.go .
 COPY Gopkg.lock Gopkg.toml ./
 
+## install dep
 RUN curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
 RUN dep ensure
 RUN go install ./...

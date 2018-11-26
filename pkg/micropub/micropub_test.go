@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/j4y_funabashi/inari-micropub/pkg/indieauth"
 	"github.com/j4y_funabashi/inari-micropub/pkg/mf2"
 	"github.com/j4y_funabashi/inari-micropub/pkg/micropub"
 	"github.com/matryer/is"
@@ -25,10 +26,16 @@ func TestMicropubQuery(t *testing.T) {
 			// arrange
 			logger := logrus.New()
 			mediaURL := "https://j4y.co/micropub/media"
+			tokenEndpoint := "tokens.test.example.com"
+			verifyTokenMock := func(tokenEndpoint, bearerToken string, logger *logrus.Logger) (indieauth.TokenResponse, error) {
+				return indieauth.TokenResponse{Me: "https://jay.funabashi.co.uk/"}, nil
+			}
 			mpServer := micropub.NewServer(
 				mediaURL,
+				tokenEndpoint,
 				logger,
 				func(mf mf2.PostCreatedEvent) error { return nil },
+				verifyTokenMock,
 			)
 
 			// act
@@ -45,14 +52,14 @@ func TestMicropubQuery(t *testing.T) {
 func TestCreatePost(t *testing.T) {
 	var tests = []struct {
 		name          string
-		authorURL     string
+		tokenRes      indieauth.TokenResponse
 		contentType   string
 		body          string
 		expectedEvent mf2.PostCreatedEvent
 	}{
 		{
 			name:        "form values: happy path",
-			authorURL:   "https://jay.funabashi.co.uk/",
+			tokenRes:    indieauth.TokenResponse{Me: "https://jay.funabashi.co.uk/"},
 			contentType: "application/x-www-form-urlencoded",
 			body:        "uid=horse&published=2012-01-28",
 			expectedEvent: mf2.PostCreatedEvent{
@@ -69,7 +76,7 @@ func TestCreatePost(t *testing.T) {
 		},
 		{
 			name:        "json: happy path",
-			authorURL:   "https://jay.funabashi.co.uk/",
+			tokenRes:    indieauth.TokenResponse{Me: "https://jay.funabashi.co.uk/"},
 			contentType: "application/json",
 			body:        `{"type":["h-entry"], "properties": {"published": ["2012-01-28"], "uid": ["horse"]}}`,
 			expectedEvent: mf2.PostCreatedEvent{
@@ -96,7 +103,7 @@ func TestCreatePost(t *testing.T) {
 			mediaURL := ""
 
 			baseURL := "http://example.com/"
-			authToken := "testtoken"
+			tokenEndpoint := "tokens.test.example.com"
 			createPostCount := 0
 			createPostMock := func(event mf2.PostCreatedEvent) error {
 				createPostCount++
@@ -104,20 +111,24 @@ func TestCreatePost(t *testing.T) {
 				is.Equal("PostCreated", event.EventType)
 				return nil
 			}
+			verifyTokenMock := func(tokenEndpoint, bearerToken string, logger *logrus.Logger) (indieauth.TokenResponse, error) {
+				return indieauth.TokenResponse{Me: "https://jay.funabashi.co.uk/"}, nil
+			}
 
 			mpServer := micropub.NewServer(
 				mediaURL,
+				tokenEndpoint,
 				logger,
 				createPostMock,
+				verifyTokenMock,
 			)
 
 			// act
 			result := mpServer.CreatePost(
 				baseURL,
-				authToken,
 				tt.contentType,
-				tt.authorURL,
 				tt.body,
+				tt.tokenRes,
 			)
 
 			// assert
