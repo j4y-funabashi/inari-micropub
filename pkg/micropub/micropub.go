@@ -21,6 +21,7 @@ type Server struct {
 	createPostEvent func(mf mf2.PostCreatedEvent) error
 	logger          *logrus.Logger
 	verifyToken     func(tokenEndpoint, bearerToken string, logger *logrus.Logger) (indieauth.TokenResponse, error)
+	postList        *mf2.PostList
 }
 
 type HttpResponse struct {
@@ -35,6 +36,7 @@ func NewServer(
 	logger *logrus.Logger,
 	createPost func(event mf2.PostCreatedEvent) error,
 	verifyToken func(tokenEndpoint, bearerToken string, logger *logrus.Logger) (indieauth.TokenResponse, error),
+	postList *mf2.PostList,
 ) Server {
 	return Server{
 		mediaEndpoint:   mediaEndpoint,
@@ -42,6 +44,7 @@ func NewServer(
 		createPostEvent: createPost,
 		logger:          logger,
 		verifyToken:     verifyToken,
+		postList:        postList,
 	}
 }
 
@@ -87,6 +90,8 @@ func (s Server) handleMicropub(baseURL string) http.HandlerFunc {
 			switch r.URL.Query().Get("q") {
 			case "config":
 				response = s.QueryConfig()
+			case "source":
+				response = s.QuerySource(r.URL.Query().Get("url"))
 			}
 		}
 
@@ -166,6 +171,9 @@ func (s Server) CreatePost(
 
 	event := mf2.NewPostCreated(mf)
 
+	s.postList.Add(mf)
+	s.postList.Sort()
+
 	err = s.createPostEvent(event)
 	if err != nil {
 		s.logger.WithError(err).Error("failed to save post")
@@ -205,4 +213,30 @@ func (s Server) buildMF(body, contentType string) (mf2.MicroFormat, error) {
 	}
 
 	return mf, nil
+}
+
+func (s Server) QuerySource(url string) HttpResponse {
+
+	var body interface{}
+	if url != "" {
+		body = s.postList.FindByURL(url)
+	} else {
+		body = s.postList
+	}
+
+	buf := bytes.NewBuffer([]byte{})
+	err := json.NewEncoder(buf).Encode(body)
+	if err != nil {
+		return HttpResponse{
+			Body: err.Error(),
+		}
+	}
+	headers := map[string]string{
+		"Content-type": "application/json",
+	}
+	return HttpResponse{
+		Headers:    headers,
+		Body:       buf.String(),
+		StatusCode: http.StatusOK,
+	}
 }

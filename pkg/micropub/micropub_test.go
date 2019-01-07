@@ -11,7 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func TestMicropubQuery(t *testing.T) {
+func TestConfigQuery(t *testing.T) {
 	var tests = []struct {
 		name string
 	}{
@@ -30,12 +30,15 @@ func TestMicropubQuery(t *testing.T) {
 			verifyTokenMock := func(tokenEndpoint, bearerToken string, logger *logrus.Logger) (indieauth.TokenResponse, error) {
 				return indieauth.TokenResponse{Me: "https://jay.funabashi.co.uk/"}, nil
 			}
+			postList := mf2.PostList{}
+
 			mpServer := micropub.NewServer(
 				mediaURL,
 				tokenEndpoint,
 				logger,
 				func(mf mf2.PostCreatedEvent) error { return nil },
 				verifyTokenMock,
+				&postList,
 			)
 
 			// act
@@ -114,6 +117,7 @@ func TestCreatePost(t *testing.T) {
 			verifyTokenMock := func(tokenEndpoint, bearerToken string, logger *logrus.Logger) (indieauth.TokenResponse, error) {
 				return indieauth.TokenResponse{Me: "https://jay.funabashi.co.uk/"}, nil
 			}
+			postList := mf2.PostList{}
 
 			mpServer := micropub.NewServer(
 				mediaURL,
@@ -121,6 +125,7 @@ func TestCreatePost(t *testing.T) {
 				logger,
 				createPostMock,
 				verifyTokenMock,
+				&postList,
 			)
 
 			// act
@@ -134,6 +139,60 @@ func TestCreatePost(t *testing.T) {
 			// assert
 			is.Equal(1, createPostCount)
 			is.Equal(micropub.HttpResponse{StatusCode: 202, Headers: map[string]string{"Location": "http://example.com/p/horse"}}, result)
+		})
+	}
+}
+
+func TestSourceQuery(t *testing.T) {
+
+	var tests = []struct {
+		name     string
+		url      string
+		expected string
+	}{
+		{
+			name:     "happy",
+			url:      "https://example.com/1",
+			expected: `{"type":["h-entry"],"properties":{"url":["https://example.com/1"]}}`,
+		},
+	}
+
+	is := is.NewRelaxed(t)
+
+	for _, tt := range tests {
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+
+			// arrange
+			logger := logrus.New()
+			mediaURL := ""
+
+			tokenEndpoint := "tokens.test.example.com"
+			createPostMock := func(event mf2.PostCreatedEvent) error { return nil }
+			verifyTokenMock := func(tokenEndpoint, bearerToken string, logger *logrus.Logger) (indieauth.TokenResponse, error) {
+				return indieauth.TokenResponse{Me: "https://jay.funabashi.co.uk/"}, nil
+			}
+			postList := mf2.PostList{}
+
+			item1 := mf2.MicroFormat{
+				Type: []string{"h-entry"},
+				Properties: map[string][]interface{}{
+					"url": []interface{}{tt.url},
+				},
+			}
+			postList.Add(item1)
+
+			mpServer := micropub.NewServer(
+				mediaURL,
+				tokenEndpoint,
+				logger,
+				createPostMock,
+				verifyTokenMock,
+				&postList,
+			)
+
+			result := mpServer.QuerySource(tt.url)
+			is.Equal(tt.expected, strings.TrimSpace(result.Body))
 		})
 	}
 }

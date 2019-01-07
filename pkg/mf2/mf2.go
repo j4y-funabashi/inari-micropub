@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"io"
 	"log"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
@@ -48,13 +49,47 @@ func MfFromJson(body string) (MicroFormat, error) {
 }
 
 type PostList struct {
-	items []MicroFormat
+	Items []MicroFormat `json:"items"`
 }
+
+func (list *PostList) Add(item MicroFormat) {
+	list.Items = append(list.Items, item)
+}
+
+func (list PostList) ToJSON() string {
+	b, err := json.Marshal(list)
+	if err != nil {
+		return ""
+	}
+	buf := bytes.NewBuffer(b)
+	return buf.String()
+}
+
+func (list *PostList) Sort() {
+	sort.Slice(list.Items, func(a, b int) bool {
+		return list.Items[a].ToView().Published > list.Items[b].ToView().Published
+	})
+}
+
+func (list PostList) FindByURL(rawurl string) MicroFormat {
+	out := MicroFormat{}
+	for _, item := range list.Items {
+		u1, _ := url.Parse(item.GetFirstString("url"))
+		u2, _ := url.Parse(rawurl)
+		if u1.Path == u2.Path {
+			return item
+		}
+	}
+	return out
+}
+
+//func (list PostList) Slice(from, to int) PostList {
+//}
 
 type MicroFormat struct {
 	Type       []string                 `json:"type"`
 	Properties map[string][]interface{} `json:"properties"`
-	Children   []interface{}            `json:"children;"`
+	Children   []interface{}            `json:"children,omitempty"`
 }
 
 func (mf MicroFormat) Feeds() []string {
