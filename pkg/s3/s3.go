@@ -85,7 +85,7 @@ type Client struct {
 }
 
 func NewClient() (Client, error) {
-	sess, _ := session.NewSession(&aws.Config{
+	s, _ := session.NewSession(&aws.Config{
 		Region: aws.String(endpoints.EuCentral1RegionID),
 	})
 	downloader := s3manager.NewDownloader(s)
