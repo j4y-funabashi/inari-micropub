@@ -5,9 +5,17 @@ services:
         build:
             context: ./
         environment:
-            S3_ENDPOINT: "http://localstack:4572"
-            TOKEN_ENDPOINT: "http://token_mock"
+            TOKEN_ENDPOINT: "http://token_mock" ## used to validate tokens
+            MEDIA_ENDPOINT: "http://mpserver/media" ## used for q=config
+            S3_ENDPOINT: "http://localstack:4572" ## DEV
+            S3_EVENTS_KEY: "jay" ## prefix for event files
+            S3_EVENTS_BUCKET: "events.funabashi.co.uk"
+            S3_MEDIA_BUCKET: "media.funabashi.co.uk"
+            BASE_URL: "http://mpserver/" ## used when saving posts + events metadata
+            SITE_URL: "https://jay.funabashi.co.uk/"
         env_file: .env
+        volumes:
+          - /tmp:/tmp
         ports:
             - 8091:80
 
@@ -18,7 +26,7 @@ services:
             - token_mock
         build:
             context: ./
-        entrypoint: ["go", "test", "./..."]
+        entrypoint: ["go", "test", "-tags=integration", "./..."]
 
     localstack:
         image: localstack/localstack

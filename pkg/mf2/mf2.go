@@ -12,8 +12,31 @@ import (
 	"time"
 
 	"github.com/microcosm-cc/bluemonday"
-	uuid "github.com/satori/go.uuid"
 )
+
+type MediaMetadata struct {
+	Uid      string     `json:"uid"`
+	URL      string     `json:"url"`
+	FileKey  string     `json:"file_key"`
+	FileHash string     `json:"file_hash"`
+	MimeType string     `json:"mime_type"`
+	DateTime *time.Time `json:"date_time"`
+	Lat      float64    `json:"lat"`
+	Lng      float64    `json:"lng"`
+}
+
+type MediaList struct {
+	Items  []MediaMetadata `json:"items"`
+	Paging *ListPaging     `json:"paging,omitempty"`
+}
+
+type ListPaging struct {
+	After string `json:"after,omitempty"`
+}
+
+func (list *MediaList) Add(item MediaMetadata) {
+	list.Items = append(list.Items, item)
+}
 
 func MfFromForm(formData map[string][]string) MicroFormat {
 	newPost := MicroFormat{
@@ -49,7 +72,8 @@ func MfFromJson(body string) (MicroFormat, error) {
 }
 
 type PostList struct {
-	Items []MicroFormat `json:"items"`
+	Items  []MicroFormat `json:"items"`
+	Paging *ListPaging   `json:"paging"`
 }
 
 func (list *PostList) Add(item MicroFormat) {
@@ -83,8 +107,10 @@ func (list PostList) FindByURL(rawurl string) MicroFormat {
 	return out
 }
 
-//func (list PostList) Slice(from, to int) PostList {
-//}
+func (list PostList) Slice(from, to int) PostList {
+	list.Items = list.Items[from:to]
+	return list
+}
 
 type MicroFormat struct {
 	Type       []string                 `json:"type"`
@@ -374,20 +400,4 @@ func normalizeDate(d string) time.Time {
 
 	log.Printf("[E] Could not parse date format [ %v ]", d)
 	return time.Now()
-}
-
-type PostCreatedEvent struct {
-	EventID      string      `json:"eventID"`
-	EventType    string      `json:"eventType"`
-	EventVersion string      `json:"eventVersion"`
-	EventData    MicroFormat `json:"eventData"`
-}
-
-func NewPostCreated(mf MicroFormat) PostCreatedEvent {
-	uid := uuid.NewV4()
-	return PostCreatedEvent{
-		EventID:      uid.String(),
-		EventType:    "PostCreated",
-		EventVersion: time.Now().Format("20060102150405.0000"),
-		EventData:    mf}
 }
