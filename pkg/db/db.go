@@ -17,7 +17,6 @@ CREATE TABLE IF NOT EXISTS "posts" (
 	"month" INTEGER NOT NULL,
 	"data" TEXT NOT NULL
 );
-
 CREATE INDEX IF NOT EXISTS "idx_posts_year" ON "posts"("year");
 CREATE INDEX IF NOT EXISTS "idx_posts_month" ON "posts"("month");
 
@@ -28,9 +27,12 @@ CREATE TABLE IF NOT EXISTS "media" (
 	"sort_key" TEXT NOT NULL,
 	"data" TEXT NOT NULL
 );
-
 CREATE INDEX IF NOT EXISTS "idx_media_year" ON "media"("year");
 CREATE INDEX IF NOT EXISTS "idx_media_month" ON "media"("month");
+
+CREATE TABLE IF NOT EXISTS "media_published" (
+	"id" TEXT PRIMARY KEY
+);
 
 CREATE TABLE IF NOT EXISTS "events" (
 	"id" TEXT PRIMARY KEY,

@@ -217,6 +217,14 @@ func (e PostCreatedEvent) reduce(sqlClient *sql.DB) error {
 		buf.String(),
 		published.Format(time.RFC3339)+e.EventData.GetFirstString("uid"),
 	)
+
+	for _, photoURL := range e.EventData.GetStringSlice("photo") {
+		_, err = sqlClient.Exec(
+			`INSERT OR IGNORE INTO media_published (id) VALUES (?)`,
+			photoURL,
+		)
+	}
+
 	return err
 }
 

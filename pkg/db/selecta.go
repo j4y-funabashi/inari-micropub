@@ -205,6 +205,11 @@ func (s Selecta) SelectMediaByURL(uid string) (mf2.MediaMetadata, error) {
 	return mf, nil
 }
 
+func (s Selecta) SelectMediaMonth(year, month string) (mf2.MediaList, error) {
+
+	return s.fetchMediaMonth(year, month)
+}
+
 func (s Selecta) SelectMediaList(limit int, afterKey string) (mf2.MediaList, error) {
 
 	postList := mf2.MediaList{
@@ -259,7 +264,8 @@ func rowsToMediaList(rows *sql.Rows, count, limit int) (mf2.MediaList, error) {
 	for rows.Next() {
 		var mfJSON string
 		var sortKey string
-		err := rows.Scan(&mfJSON, &sortKey)
+		var isPublished string
+		err := rows.Scan(&mfJSON, &sortKey, &isPublished)
 		if err != nil {
 			return postList, err
 		}
@@ -268,6 +274,11 @@ func rowsToMediaList(rows *sql.Rows, count, limit int) (mf2.MediaList, error) {
 		if err != nil {
 			return postList, err
 		}
+
+		if len(isPublished) > 0 && isPublished != "0" {
+			mf.IsPublished = true
+		}
+
 		postList.Add(mf)
 		if count > limit {
 			paging := mf2.ListPaging{
@@ -309,6 +320,27 @@ func (s Selecta) fetchPostList(afterKey string, count, limit int) (mf2.PostList,
 	return postList, err
 }
 
+func (s Selecta) fetchMediaMonth(year, month string) (mf2.MediaList, error) {
+	postList := mf2.MediaList{
+		Paging: &mf2.ListPaging{},
+	}
+
+	rows, err := s.db.Query(
+		`SELECT data, sort_key, COALESCE(media_published.id, 0)
+FROM media
+LEFT JOIN media_published ON media.id = media_published.id
+WHERE media.year = :year AND media.month = :month
+ORDER BY sort_key DESC;`,
+		sql.Named("year", year),
+		sql.Named("month", month),
+	)
+	if err != nil {
+		return postList, err
+	}
+	postList, err = rowsToMediaList(rows, 0, 0)
+	return postList, err
+}
+
 func (s Selecta) fetchMediaList(afterKey string, count, limit int) (mf2.MediaList, error) {
 	postList := mf2.MediaList{
 		Paging: &mf2.ListPaging{},
@@ -316,7 +348,10 @@ func (s Selecta) fetchMediaList(afterKey string, count, limit int) (mf2.MediaLis
 
 	if len(afterKey) > 0 {
 		rows, err := s.db.Query(
-			`SELECT data, sort_key FROM media WHERE sort_key < :sortKey ORDER BY sort_key DESC LIMIT :limit`,
+			`SELECT data, sort_key, COALESCE(media_published.id, 0)
+FROM media
+LEFT JOIN media_published ON media.id = media_published.id
+WHERE sort_key < :sortKey ORDER BY sort_key DESC LIMIT :limit;`,
 			sql.Named("limit", limit),
 			sql.Named("sortKey", afterKey),
 		)
@@ -328,7 +363,10 @@ func (s Selecta) fetchMediaList(afterKey string, count, limit int) (mf2.MediaLis
 	}
 
 	rows, err := s.db.Query(
-		`SELECT data, sort_key FROM media ORDER BY sort_key DESC LIMIT :limit`,
+		`SELECT data, sort_key, COALESCE(media_published.id, 0)
+FROM media
+LEFT JOIN media_published ON media.id = media_published.id
+ORDER BY sort_key DESC LIMIT :limit;`,
 		sql.Named("limit", limit),
 	)
 	if err != nil {

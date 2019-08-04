@@ -15,14 +15,15 @@ import (
 )
 
 type MediaMetadata struct {
-	Uid      string     `json:"uid"`
-	URL      string     `json:"url"`
-	FileKey  string     `json:"file_key"`
-	FileHash string     `json:"file_hash"`
-	MimeType string     `json:"mime_type"`
-	DateTime *time.Time `json:"date_time"`
-	Lat      float64    `json:"lat"`
-	Lng      float64    `json:"lng"`
+	Uid         string     `json:"uid"`
+	URL         string     `json:"url"`
+	FileKey     string     `json:"file_key"`
+	FileHash    string     `json:"file_hash"`
+	MimeType    string     `json:"mime_type"`
+	DateTime    *time.Time `json:"date_time"`
+	Lat         float64    `json:"lat"`
+	Lng         float64    `json:"lng"`
+	IsPublished bool       `json:"is_published"`
 }
 
 type MediaList struct {
@@ -157,6 +158,10 @@ func (mf *MicroFormat) SetDefaults(defaultAuthor, uuid, url string) {
 
 func (mf MicroFormat) GetFirstString(key string) string {
 	return mf.getFirstString(key)
+}
+
+func (mf MicroFormat) GetStringSlice(key string) []string {
+	return mf.getStringSlice(key)
 }
 
 func (mf MicroFormat) ToView() MicroFormatView {

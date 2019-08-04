@@ -22,7 +22,7 @@ func TestSelectMediaList(t *testing.T) {
 			name:  "it contains paging when there are more items",
 			limit: 1,
 			expectedItems: []mf2.MediaMetadata{
-				mf2.MediaMetadata{URL: "http://example.com/2"},
+				mf2.MediaMetadata{URL: "http://example.com/2", IsPublished: true},
 			},
 			expectedPaging: mf2.ListPaging{
 				After: "12345",
@@ -32,8 +32,8 @@ func TestSelectMediaList(t *testing.T) {
 			name:  "it does not contain paging when there are no more items",
 			limit: 2,
 			expectedItems: []mf2.MediaMetadata{
-				mf2.MediaMetadata{URL: "http://example.com/2"},
-				mf2.MediaMetadata{URL: "http://example.com/1"},
+				mf2.MediaMetadata{URL: "http://example.com/2", IsPublished: true},
+				mf2.MediaMetadata{URL: "http://example.com/1", IsPublished: false},
 			},
 			expectedPaging: mf2.ListPaging{},
 		},
@@ -41,7 +41,7 @@ func TestSelectMediaList(t *testing.T) {
 			name:  "it pages items based on 'after' variable",
 			limit: 1,
 			expectedItems: []mf2.MediaMetadata{
-				mf2.MediaMetadata{URL: "http://example.com/1"},
+				mf2.MediaMetadata{URL: "http://example.com/1", IsPublished: false},
 			},
 			expectedPaging: mf2.ListPaging{},
 			after:          "12345",
@@ -81,6 +81,10 @@ func TestSelectMediaList(t *testing.T) {
 				sql.Named("sortkey", "12345"),
 				sql.Named("data", `{"url": "http://example.com/2"}`),
 			)
+			_, err = sqlClient.Exec(
+				`INSERT INTO media_published (id) VALUES (:id)`,
+				sql.Named("id", "http://example.com/2"),
+			)
 			if err != nil {
 				t.Fatalf("failed to insert data:: %s", err.Error())
 			}
@@ -89,7 +93,7 @@ func TestSelectMediaList(t *testing.T) {
 			selecta := db.NewSelecta(sqlClient)
 			result, err := selecta.SelectMediaList(tt.limit, tt.after)
 			if err != nil {
-				t.Fatal("failed to select media list")
+				t.Fatal("failed to select media list:: %s", err.Error())
 			}
 
 			// ASSERT

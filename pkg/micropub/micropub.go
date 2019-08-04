@@ -119,7 +119,9 @@ func (s Server) handleMediaQuery() http.HandlerFunc {
 					limit = 20
 				}
 				after := r.URL.Query().Get("after")
-				response = s.QueryMediaList(limit, after)
+				year := r.URL.Query().Get("year")
+				month := r.URL.Query().Get("month")
+				response = s.QueryMediaList(limit, after, year, month)
 			}
 		case "years":
 			response = s.QueryMediaYearsList()
@@ -160,6 +162,7 @@ func (s Server) handleMedia(baseURL string) http.HandlerFunc {
 
 		err := r.ParseMultipartForm(32 << 20)
 		if err != nil {
+			s.logger.WithError(err).Error("Failed to parse multipart form")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -515,12 +518,26 @@ func (s Server) QueryMediaByURL(url string) HttpResponse {
 	}
 }
 
-func (s Server) QueryMediaList(limit int, after string) HttpResponse {
-	body, err := s.selecta.SelectMediaList(limit, after)
-	if err != nil {
-		return HttpResponse{
-			Body: err.Error(),
+func (s Server) QueryMediaList(limit int, after, year, month string) HttpResponse {
+
+	var err error
+	var body mf2.MediaList
+	if month != "" && year != "" {
+		body, err = s.selecta.SelectMediaMonth(year, month)
+		if err != nil {
+			return HttpResponse{
+				Body: err.Error(),
+			}
 		}
+
+	} else {
+		body, err = s.selecta.SelectMediaList(limit, after)
+		if err != nil {
+			return HttpResponse{
+				Body: err.Error(),
+			}
+		}
+
 	}
 
 	buf := bytes.NewBuffer([]byte{})
