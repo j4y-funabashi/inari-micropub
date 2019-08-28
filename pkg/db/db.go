@@ -52,8 +52,7 @@ func OpenDB() (*sql.DB, error) {
 		}
 	}()
 
-	dbPath := ""
-
+	dbPath := "./foo.db"
 	db, err = sql.Open("sqlite3", dbPath)
 	if err != nil {
 		return nil, fmt.Errorf("opening database: %v", err)

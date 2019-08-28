@@ -34,8 +34,8 @@ func NewEventLog(
 type Event interface {
 	getJSON() io.Reader
 	getFilekey() string
-	save(sqlClient *sql.DB, s3Client s3.Client, s3KeyPrefix, s3Bucket string) error
-	reduce(sqlClient *sql.DB) error
+	save(sqlClient *sql.Tx, s3Client s3.Client, s3KeyPrefix, s3Bucket string) error
+	reduce(sqlClient *sql.Tx) error
 }
 
 type EventLog struct {
@@ -81,7 +81,7 @@ func (e MediaUploadedEvent) getFilekey() string {
 	return e.EventVersion + "_" + e.EventID + ".json"
 }
 
-func (e MediaUploadedEvent) save(sqlClient *sql.DB, s3Client s3.Client, s3KeyPrefix, s3Bucket string) error {
+func (e MediaUploadedEvent) save(sqlClient *sql.Tx, s3Client s3.Client, s3KeyPrefix, s3Bucket string) error {
 	eventData := e.getJSON()
 	fileKey := path.Join(
 		s3KeyPrefix,
@@ -112,7 +112,7 @@ func (e MediaUploadedEvent) save(sqlClient *sql.DB, s3Client s3.Client, s3KeyPre
 	return err
 }
 
-func (e MediaUploadedEvent) reduce(sqlClient *sql.DB) error {
+func (e MediaUploadedEvent) reduce(sqlClient *sql.Tx) error {
 
 	// TODO get this from ENV
 	e.EventData.URL = "https://media.funabashi.co.uk/" + e.EventData.FileKey
@@ -161,7 +161,7 @@ func NewPostCreated(mf mf2.MicroFormat) PostCreatedEvent {
 		EventData:    mf}
 }
 
-func (e PostCreatedEvent) save(sqlClient *sql.DB, s3Client s3.Client, s3KeyPrefix, s3Bucket string) error {
+func (e PostCreatedEvent) save(sqlClient *sql.Tx, s3Client s3.Client, s3KeyPrefix, s3Bucket string) error {
 	eventData := e.getJSON()
 	fileKey := path.Join(
 		s3KeyPrefix,
@@ -196,7 +196,7 @@ func (e PostCreatedEvent) save(sqlClient *sql.DB, s3Client s3.Client, s3KeyPrefi
 	return err
 }
 
-func (e PostCreatedEvent) reduce(sqlClient *sql.DB) error {
+func (e PostCreatedEvent) reduce(sqlClient *sql.Tx) error {
 
 	published, err := time.Parse(time.RFC3339Nano, e.EventData.GetFirstString("published"))
 	if err != nil {
@@ -256,10 +256,10 @@ func (e nullEvent) getJSON() io.Reader {
 func (e nullEvent) getFilekey() string {
 	return ""
 }
-func (e nullEvent) save(sqlClient *sql.DB, s3Client s3.Client, s3KeyPrefix, s3Bucket string) error {
+func (e nullEvent) save(sqlClient *sql.Tx, s3Client s3.Client, s3KeyPrefix, s3Bucket string) error {
 	return nil
 }
-func (e nullEvent) reduce(sqlClient *sql.DB) error {
+func (e nullEvent) reduce(sqlClient *sql.Tx) error {
 	return nil
 }
 
@@ -297,7 +297,12 @@ func (el EventLog) Replay() error {
 		return err
 	}
 
-	el.logger.Infof("found %d events", len(allKeys))
+	el.logger.Infof("found %d events, starting transaction", len(allKeys))
+	tx, err := el.db.Begin()
+	if err != nil {
+		el.logger.WithError(err).Error("failed to start transaction")
+		return err
+	}
 
 	for _, key := range allKeys {
 		buf, err := el.s3Client.ReadObject(*key, el.s3Bucket)
@@ -318,7 +323,7 @@ func (el EventLog) Replay() error {
 			continue
 		}
 
-		err = event.save(el.db, el.s3Client, el.s3KeyPrefix, el.s3Bucket)
+		err = event.save(tx, el.s3Client, el.s3KeyPrefix, el.s3Bucket)
 		if err != nil {
 			el.logger.
 				WithField("key", key).
@@ -327,7 +332,7 @@ func (el EventLog) Replay() error {
 			continue
 		}
 
-		err = event.reduce(el.db)
+		err = event.reduce(tx)
 		if err != nil {
 			el.logger.
 				WithField("key", key).
@@ -338,6 +343,11 @@ func (el EventLog) Replay() error {
 
 	}
 
+	err = tx.Commit()
+	if err != nil {
+		el.logger.WithError(err).Error("failed to commit transaction")
+		return err
+	}
 	el.logger.Infof("completed replaying %d events", len(allKeys))
 
 	return nil
@@ -346,12 +356,24 @@ func (el EventLog) Replay() error {
 // Append will save an event to remote and local storage
 func (el EventLog) Append(event Event) error {
 
-	err := event.save(el.db, el.s3Client, el.s3KeyPrefix, el.s3Bucket)
+	tx, err := el.db.Begin()
+	if err != nil {
+		el.logger.WithError(err).Error("failed to start transaction")
+		return err
+	}
+
+	err = event.save(tx, el.s3Client, el.s3KeyPrefix, el.s3Bucket)
 	if err != nil {
 		return err
 	}
 
-	err = event.reduce(el.db)
+	err = event.reduce(tx)
+
+	err = tx.Commit()
+	if err != nil {
+		el.logger.WithError(err).Error("failed to commit transaction")
+		return err
+	}
 
 	return err
 }
