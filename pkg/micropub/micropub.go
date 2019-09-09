@@ -661,7 +661,8 @@ func (s Server) QuerySourceList(limit int, after string) HttpResponse {
 	body, err := s.selecta.SelectPostList(limit, after)
 	if err != nil {
 		return HttpResponse{
-			Body: err.Error(),
+			Body:       err.Error(),
+			StatusCode: http.StatusInternalServerError,
 		}
 	}
 
@@ -669,7 +670,8 @@ func (s Server) QuerySourceList(limit int, after string) HttpResponse {
 	err = json.NewEncoder(buf).Encode(body)
 	if err != nil {
 		return HttpResponse{
-			Body: err.Error(),
+			Body:       err.Error(),
+			StatusCode: http.StatusInternalServerError,
 		}
 	}
 	headers := map[string]string{
