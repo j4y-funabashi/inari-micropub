@@ -16,7 +16,7 @@ import (
 func main() {
 
 	// config
-	port := "80"
+	port := os.Getenv("PORT")
 	tokenEndpoint := os.Getenv("TOKEN_ENDPOINT")
 	mediaURL := os.Getenv("MEDIA_ENDPOINT")
 	s3Endpoint := os.Getenv("S3_ENDPOINT")
