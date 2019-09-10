@@ -26,6 +26,7 @@
 
 [metadata.heroku]
   root-package = "github.com/j4y_funabashi/inari-micropub"
+  install = [ "./cmd/..."]
 
 [[constraint]]
   name = "github.com/gorilla/mux"
