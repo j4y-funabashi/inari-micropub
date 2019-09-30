@@ -27,7 +27,6 @@ func main() {
 	// deps
 	logger := logrus.New()
 	logger.Formatter = &logrus.JSONFormatter{}
-	router := mux.NewRouter()
 
 	s3Client, err := s3.NewClient(s3Endpoint)
 	if err != nil {
@@ -66,7 +65,12 @@ func main() {
 		eventLog,
 		mediaServer,
 	)
-	micropubServer.Routes(router)
+
+	// routing
+	router := mux.NewRouter()
+	micropubServer.Routes(router.PathPrefix("/micropub").Subrouter())
+
+	go eventLog.Replay()
 
 	logger.Info("XX micropub server running on port " + port)
 	logger.Fatal(http.ListenAndServe(":"+port, router))

@@ -96,19 +96,6 @@ func (e MediaUploadedEvent) save(sqlClient *sql.Tx, s3Client s3.Client, s3KeyPre
 		true,
 	)
 
-	if err != nil {
-		return err
-	}
-
-	buf := new(bytes.Buffer)
-	buf.ReadFrom(e.getJSON())
-	_, err = sqlClient.Exec(
-		`INSERT OR IGNORE INTO events (id, version, data) VALUES (?, ?, ?)`,
-		e.EventID,
-		e.EventVersion,
-		buf.String(),
-	)
-
 	return err
 }
 
@@ -124,9 +111,9 @@ func (e MediaUploadedEvent) reduce(sqlClient *sql.Tx) error {
 	}
 
 	_, err = sqlClient.Exec(
-		`INSERT OR IGNORE INTO media
+		`INSERT INTO media
 			(id, year, month, data, sort_key)
-			VALUES (?, ?, ?, ?, ?)`,
+			VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING`,
 		e.EventData.URL,
 		e.EventData.DateTime.Format("2006"),
 		e.EventData.DateTime.Format("01"),
@@ -176,23 +163,6 @@ func (e PostCreatedEvent) save(sqlClient *sql.Tx, s3Client s3.Client, s3KeyPrefi
 		true,
 	)
 
-	if err != nil {
-		return err
-	}
-
-	buf := new(bytes.Buffer)
-	_, err = buf.ReadFrom(e.getJSON())
-	if err != nil {
-		return err
-	}
-
-	_, err = sqlClient.Exec(
-		`INSERT OR IGNORE INTO events (id, version, data) VALUES (?, ?, ?)`,
-		e.EventID,
-		e.EventVersion,
-		buf.String(),
-	)
-
 	return err
 }
 
@@ -210,7 +180,7 @@ func (e PostCreatedEvent) reduce(sqlClient *sql.Tx) error {
 	}
 
 	_, err = sqlClient.Exec(
-		`INSERT OR IGNORE INTO posts (id, year, month, data, sort_key) VALUES (?, ?, ?, ?, ?)`,
+		`INSERT INTO posts (id, year, month, data, sort_key) VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING`,
 		e.EventData.GetFirstString("url"),
 		published.Format("2006"),
 		published.Format("01"),
@@ -220,7 +190,7 @@ func (e PostCreatedEvent) reduce(sqlClient *sql.Tx) error {
 
 	for _, photoURL := range e.EventData.GetStringSlice("photo") {
 		_, err = sqlClient.Exec(
-			`INSERT OR IGNORE INTO media_published (id) VALUES (?)`,
+			`INSERT INTO media_published (id) VALUES ($1) ON CONFLICT DO NOTHING`,
 			photoURL,
 		)
 	}
@@ -320,15 +290,6 @@ func (el EventLog) Replay() error {
 				WithField("key", key).
 				WithError(err).
 				Error("failed to decode event file")
-			continue
-		}
-
-		err = event.save(tx, el.s3Client, el.s3KeyPrefix, el.s3Bucket)
-		if err != nil {
-			el.logger.
-				WithField("key", key).
-				WithError(err).
-				Error("failed to save event to db")
 			continue
 		}
 

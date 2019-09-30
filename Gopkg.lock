@@ -2,28 +2,87 @@
 
 
 [[projects]]
-  digest = "1:c79fb010be38a59d657c48c6ba1d003a8aa651fa56b579d959d74573b7dff8e1"
-  name = "github.com/gorilla/context"
-  packages = ["."]
+  digest = "1:1d91031bd118fcc978f3704114160f38535b8e66b24963b2bd6af2267f698de7"
+  name = "github.com/aws/aws-sdk-go"
+  packages = [
+    "aws",
+    "aws/awserr",
+    "aws/awsutil",
+    "aws/client",
+    "aws/client/metadata",
+    "aws/corehandlers",
+    "aws/credentials",
+    "aws/credentials/ec2rolecreds",
+    "aws/credentials/endpointcreds",
+    "aws/credentials/processcreds",
+    "aws/credentials/stscreds",
+    "aws/csm",
+    "aws/defaults",
+    "aws/ec2metadata",
+    "aws/endpoints",
+    "aws/request",
+    "aws/session",
+    "aws/signer/v4",
+    "internal/ini",
+    "internal/s3err",
+    "internal/sdkio",
+    "internal/sdkmath",
+    "internal/sdkrand",
+    "internal/sdkuri",
+    "internal/shareddefaults",
+    "private/protocol",
+    "private/protocol/eventstream",
+    "private/protocol/eventstream/eventstreamapi",
+    "private/protocol/json/jsonutil",
+    "private/protocol/query",
+    "private/protocol/query/queryutil",
+    "private/protocol/rest",
+    "private/protocol/restxml",
+    "private/protocol/xml/xmlutil",
+    "service/s3",
+    "service/s3/s3iface",
+    "service/s3/s3manager",
+    "service/sts",
+    "service/sts/stsiface",
+  ]
   pruneopts = "UT"
-  revision = "08b5f424b9271eedf6f9f0ce86cb9396ed337a42"
-  version = "v1.1.1"
+  revision = "b4225bdde03b756685c89b7db31fe2ffac6d9234"
+  version = "v1.24.0"
 
 [[projects]]
-  digest = "1:e73f5b0152105f18bc131fba127d9949305c8693f8a762588a82a48f61756f5f"
+  digest = "1:cbec35fe4d5a4fba369a656a8cd65e244ea2c743007d8f6c1ccb132acf9d1296"
   name = "github.com/gorilla/mux"
   packages = ["."]
   pruneopts = "UT"
-  revision = "e3702bed27f0d39777b0b37b664b6280e8ef8fbf"
-  version = "v1.6.2"
+  revision = "00bdffe0f3c77e27d2cf6f5c70232a2d3e4d9c15"
+  version = "v1.7.3"
 
 [[projects]]
-  digest = "1:0a69a1c0db3591fcefb47f115b224592c8dfa4368b7ba9fae509d5e16cdc95c8"
+  digest = "1:bb81097a5b62634f3e9fec1014657855610c82d19b9a40c17612e32651e35dca"
+  name = "github.com/jmespath/go-jmespath"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "c2b33e84"
+
+[[projects]]
+  digest = "1:31e761d97c76151dde79e9d28964a812c46efc5baee4085b86f68f0c654450de"
   name = "github.com/konsorten/go-windows-terminal-sequences"
   packages = ["."]
   pruneopts = "UT"
-  revision = "5c8c8bd35d3832f5d134ae1e1e375b69a4d25242"
-  version = "v1.0.1"
+  revision = "f55edac94c9bbba5d6182a4be46d86a2c9b5b50e"
+  version = "v1.0.2"
+
+[[projects]]
+  digest = "1:12cb143f2148bf54bcd9fe622abac17325e85eeb1d84b8ec6caf1c80232108fd"
+  name = "github.com/lib/pq"
+  packages = [
+    ".",
+    "oid",
+    "scram",
+  ]
+  pruneopts = "UT"
+  revision = "3427c32cb71afc948325f299f040e53c1dd78979"
+  version = "v1.2.0"
 
 [[projects]]
   digest = "1:044c8b8d1c1d5ab5145c7efeec3c1c200f8dddb49f590c87911231ae50ed6d8c"
@@ -34,12 +93,23 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:1fc201f179a7d45f944655de3cdbfb0a8a226fd525569454e31ca87f9e4bb677"
+  digest = "1:6ff1026b8d873d074ddec82ad60bb0eb537dc013f456ef26b63d30beba2f99e7"
   name = "github.com/microcosm-cc/bluemonday"
   packages = ["."]
   pruneopts = "UT"
-  revision = "82c7118e8ccf7403d4860175d97bb635e8e28239"
-  version = "v1.0.1"
+  revision = "506f3da9b7c86d737e91f16b7431df8635871552"
+  version = "v1.0.2"
+
+[[projects]]
+  branch = "go1"
+  digest = "1:a7bfbc6bed06c986eb38484a841d34718ab7528b383bed4ef487091df5d07464"
+  name = "github.com/rwcarlsen/goexif"
+  packages = [
+    "exif",
+    "tiff",
+  ]
+  pruneopts = "UT"
+  revision = "9e8deecbddbd4989a3e8d003684b783412b41e7a"
 
 [[projects]]
   digest = "1:274f67cb6fed9588ea2521ecdac05a6d62a8c51c074c1fccc6a49a40ba80e925"
@@ -50,50 +120,48 @@
   version = "v1.2.0"
 
 [[projects]]
-  digest = "1:69b1cc331fca23d702bd72f860c6a647afd0aa9fcbc1d0659b1365e26546dd70"
+  digest = "1:04457f9f6f3ffc5fea48e71d62f2ca256637dee0a04d710288e27e05c8b41976"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
   pruneopts = "UT"
-  revision = "bcd833dfe83d3cebad139e4a29ed79cb2318bf95"
-  version = "v1.2.0"
+  revision = "839c75faf7f98a33d445d181f3018b5c3409a45e"
+  version = "v1.4.2"
 
 [[projects]]
   branch = "master"
-  digest = "1:3f3a05ae0b95893d90b9b3b5afdb79a9b3d96e4e36e099d841ae602e4aca0da8"
-  name = "golang.org/x/crypto"
-  packages = ["ssh/terminal"]
-  pruneopts = "UT"
-  revision = "3d3f9f413869b949e48070b5bc593aa22cc2b8f2"
-
-[[projects]]
-  branch = "master"
-  digest = "1:1a1ecfa7b54ca3f7a0115ab5c578d7d6a5d8b605839c549e80260468c42f8be7"
+  digest = "1:d7b978a787736537d0ad2f84c0e8b75b05c2febef0537198e28edf1cf2768afd"
   name = "golang.org/x/net"
   packages = [
     "html",
     "html/atom",
   ]
   pruneopts = "UT"
-  revision = "adae6a3d119ae4890b46832a2e88a95adc62b8e7"
+  revision = "c8589233b77dde5edd2205ba8a4fb5c9c2472556"
 
 [[projects]]
   branch = "master"
-  digest = "1:a089387bbfcfa884e5aafeebb85929993195bb8959766b1d20102841d47e0b0e"
+  digest = "1:ec9d9815894f067c7878330735b9e4dfa6dc61234d2ba136b60a1436d6b5ea94"
   name = "golang.org/x/sys"
-  packages = [
-    "unix",
-    "windows",
-  ]
+  packages = ["unix"]
   pruneopts = "UT"
-  revision = "93218def8b18e66adbdab3eca8ec334700329f1f"
+  revision = "b4ddaad3f8a36719f2b8bc6486c14cc468ca2bb5"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
   input-imports = [
+    "github.com/aws/aws-sdk-go/aws",
+    "github.com/aws/aws-sdk-go/aws/awserr",
+    "github.com/aws/aws-sdk-go/aws/credentials",
+    "github.com/aws/aws-sdk-go/aws/endpoints",
+    "github.com/aws/aws-sdk-go/aws/session",
+    "github.com/aws/aws-sdk-go/service/s3",
+    "github.com/aws/aws-sdk-go/service/s3/s3manager",
     "github.com/gorilla/mux",
+    "github.com/lib/pq",
     "github.com/matryer/is",
     "github.com/microcosm-cc/bluemonday",
+    "github.com/rwcarlsen/goexif/exif",
     "github.com/satori/go.uuid",
     "github.com/sirupsen/logrus",
   ]

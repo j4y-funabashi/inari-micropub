@@ -1,13 +1,9 @@
-#!/bin/sh
+#!/usr/bin/env bash
+set -eux
 
-docker-compose down -v
-docker-compose up -d localstack
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-sleep 2
+$DIR/wait-for-it.sh db:5432 -- echo 'HORSE!!! Database is up'
+$DIR/wait-for-it.sh localstack:4572 -- echo 'HORSE!!! localstack.s3 is up'
 
-awslocal s3 mb s3://events.funabashi.co.uk
-awslocal s3 mb s3://media.funabashi.co.uk
-
-sleep 2
-
-docker-compose up --build --exit-code-from tests tests
+go test ./pkg/...

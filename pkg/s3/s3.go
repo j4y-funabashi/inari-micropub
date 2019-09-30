@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -45,6 +46,29 @@ func NewClient(s3Endpoint string) (Client, error) {
 		downloader: downloader,
 		uploader:   uploader,
 	}, nil
+}
+
+func (client Client) CreateBucket(bucket string) error {
+	region := endpoints.EuCentral1RegionID
+	input := &s3.CreateBucketInput{
+		Bucket: aws.String(bucket),
+		CreateBucketConfiguration: &s3.CreateBucketConfiguration{
+			LocationConstraint: aws.String(region),
+		},
+	}
+	_, err := client.s3Client.CreateBucket(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case s3.ErrCodeBucketAlreadyExists:
+				return nil
+			default:
+				return err
+			}
+		}
+	}
+
+	return err
 }
 
 func (client Client) ListKeys(bucket, prefix string) ([]*string, error) {

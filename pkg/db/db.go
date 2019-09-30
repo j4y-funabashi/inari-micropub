@@ -3,9 +3,9 @@ package db
 import (
 	"database/sql"
 	"fmt"
+	"os"
 
-	// register the sqlite3 driver
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 )
 
 func createDB() string {
@@ -34,28 +34,14 @@ CREATE TABLE IF NOT EXISTS "media_published" (
 	"id" TEXT PRIMARY KEY
 );
 
-CREATE TABLE IF NOT EXISTS "events" (
-	"id" TEXT PRIMARY KEY,
-	"version" TEXT NOT NULL,
-	"data" TEXT NOT NULL
-);
-
 `
 }
 
 func OpenDB() (*sql.DB, error) {
-	var db *sql.DB
-	var err error
-	defer func() {
-		if err != nil && db != nil {
-			db.Close()
-		}
-	}()
 
-	dbPath := "./foo.db"
-	db, err = sql.Open("sqlite3", dbPath)
+	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
-		return nil, fmt.Errorf("opening database: %v", err)
+		return nil, fmt.Errorf("failed opening database: %s", err.Error())
 	}
 
 	// ensure DB is provisioned

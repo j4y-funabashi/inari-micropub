@@ -1,7 +1,7 @@
 version: "2"
 
 services:
-    mpserver:
+    tests:
         build:
             context: ./
         environment:
@@ -13,28 +13,25 @@ services:
             S3_MEDIA_BUCKET: "media.funabashi.co.uk"
             BASE_URL: "http://mpserver/" ## used when saving posts + events metadata
             SITE_URL: "https://jay.funabashi.co.uk/"
-        env_file: .env
-        volumes:
-          - /tmp:/tmp
-        ports:
-            - 8091:80
-
-    tests:
+            DATABASE_URL: "postgresql://postgres:example@db:5432?sslmode=disable"
         depends_on:
-            - mpserver
-            - localstack
-            - token_mock
-        build:
-            context: ./
-        entrypoint: ["go", "test", "-tags=integration", "./..."]
+          - db
+          - localstack
+        env_file: .env
+        entrypoint: ["./scripts/run_tests.sh"]
+
+    db:
+        image: postgres
+        restart: always
+        environment:
+            POSTGRES_PASSWORD: example
 
     localstack:
         image: localstack/localstack
         environment:
             SERVICES: "s3"
+            DEFAULT_REGION: "eu-west-1"
+            DATA_DIR: "/tmp/localstack/data"
+            USE_SSL: "false"
         ports:
             - 4572:4572
-
-    token_mock:
-        build:
-            context: ./mocks/token_endpoint

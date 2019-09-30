@@ -1,6 +1,6 @@
-test:
-	./scripts/run_tests.sh
-
 build:
-	go build -o bin/inari-web -v .
-	go build -o bin/inari-replay -v cmd/inari-replay/main.go
+	go build -o bin/inari-web -v cmd/inari-web/main.go
+
+test:
+	docker-compose down -v
+	docker-compose up --build --exit-code-from tests

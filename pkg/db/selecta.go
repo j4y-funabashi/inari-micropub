@@ -61,7 +61,7 @@ func (s Selecta) SelectMonthList(year string) ([]ArchiveLinkMonth, error) {
 	}
 
 	rows, err := s.db.Query(
-		`SELECT month,count(*) as count FROM posts WHERE year = ? GROUP BY month ORDER BY sort_key DESC `,
+		`SELECT month,count(*) as count FROM posts WHERE year = $1 GROUP BY month ORDER BY sort_key DESC `,
 		year,
 	)
 	if err != nil {
@@ -90,7 +90,7 @@ func (s Selecta) SelectMediaMonthList(year string) ([]ArchiveLinkMonth, error) {
 	}
 
 	rows, err := s.db.Query(
-		`SELECT month,count(*) as count FROM media WHERE year = ? GROUP BY month ORDER BY sort_key DESC `,
+		`SELECT month,count(*) as count FROM media WHERE year = $1 GROUP BY month ORDER BY sort_key DESC `,
 		year,
 	)
 	if err != nil {
@@ -152,7 +152,7 @@ func (s Selecta) SelectPostList(limit int, afterKey string) (mf2.PostList, error
 func (s Selecta) SelectPostByURL(uid string) (mf2.MicroFormat, error) {
 
 	rows, err := s.db.Query(
-		`SELECT data FROM posts WHERE id = ?`,
+		`SELECT data FROM posts WHERE id = $1`,
 		uid,
 	)
 	if err != nil {
@@ -180,7 +180,7 @@ func (s Selecta) SelectPostByURL(uid string) (mf2.MicroFormat, error) {
 func (s Selecta) SelectMediaByURL(uid string) (mf2.MediaMetadata, error) {
 
 	rows, err := s.db.Query(
-		`SELECT data FROM media WHERE id = ?`,
+		`SELECT data FROM media WHERE id = $1`,
 		uid,
 	)
 	if err != nil {
@@ -298,9 +298,9 @@ func (s Selecta) fetchPostList(afterKey string, count, limit int) (mf2.PostList,
 
 	if len(afterKey) > 0 {
 		rows, err := s.db.Query(
-			`SELECT data, sort_key FROM posts WHERE sort_key < :sortKey ORDER BY sort_key DESC LIMIT :limit`,
-			sql.Named("limit", limit),
-			sql.Named("sortKey", afterKey),
+			`SELECT data, sort_key FROM posts WHERE sort_key < $1 ORDER BY sort_key DESC LIMIT $2`,
+			afterKey,
+			limit,
 		)
 		if err != nil {
 			return postList, err
@@ -310,8 +310,8 @@ func (s Selecta) fetchPostList(afterKey string, count, limit int) (mf2.PostList,
 	}
 
 	rows, err := s.db.Query(
-		`SELECT data, sort_key FROM posts ORDER BY sort_key DESC LIMIT :limit`,
-		sql.Named("limit", limit),
+		`SELECT data, sort_key FROM posts ORDER BY sort_key DESC LIMIT $1`,
+		limit,
 	)
 	if err != nil {
 		return postList, err
@@ -329,10 +329,10 @@ func (s Selecta) fetchMediaMonth(year, month string) (mf2.MediaList, error) {
 		`SELECT data, sort_key, COALESCE(media_published.id, 0)
 FROM media
 LEFT JOIN media_published ON media.id = media_published.id
-WHERE media.year = :year AND media.month = :month
+WHERE media.year = $1 AND media.month = $2
 ORDER BY sort_key DESC;`,
-		sql.Named("year", year),
-		sql.Named("month", month),
+		year,
+		month,
 	)
 	if err != nil {
 		return postList, err
@@ -351,9 +351,9 @@ func (s Selecta) fetchMediaList(afterKey string, count, limit int) (mf2.MediaLis
 			`SELECT data, sort_key, COALESCE(media_published.id, 0)
 FROM media
 LEFT JOIN media_published ON media.id = media_published.id
-WHERE sort_key < :sortKey ORDER BY sort_key DESC LIMIT :limit;`,
-			sql.Named("limit", limit),
-			sql.Named("sortKey", afterKey),
+WHERE sort_key < $1 ORDER BY sort_key DESC LIMIT $2;`,
+			afterKey,
+			limit,
 		)
 		if err != nil {
 			return postList, err
@@ -366,8 +366,8 @@ WHERE sort_key < :sortKey ORDER BY sort_key DESC LIMIT :limit;`,
 		`SELECT data, sort_key, COALESCE(media_published.id, 0)
 FROM media
 LEFT JOIN media_published ON media.id = media_published.id
-ORDER BY sort_key DESC LIMIT :limit;`,
-		sql.Named("limit", limit),
+ORDER BY sort_key DESC LIMIT $1;`,
+		limit,
 	)
 	if err != nil {
 		return postList, err
@@ -380,16 +380,16 @@ func (s Selecta) fetchPostCount(afterKey string, limit int) (int, error) {
 	var count int
 	if len(afterKey) > 0 {
 		row := s.db.QueryRow(
-			`SELECT count(*) FROM posts WHERE sort_key < :sortKey ORDER BY sort_key DESC LIMIT :limit`,
-			sql.Named("limit", limit+1),
-			sql.Named("sortKey", afterKey),
+			`SELECT count(*) FROM posts WHERE sort_key < $1 ORDER BY sort_key DESC LIMIT $2`,
+			afterKey,
+			limit+1,
 		)
 		err := row.Scan(&count)
 		return count, err
 	}
 	row := s.db.QueryRow(
-		`SELECT count(*) FROM posts ORDER BY sort_key DESC LIMIT :limit`,
-		sql.Named("limit", limit+1),
+		`SELECT count(*) FROM posts ORDER BY sort_key DESC LIMIT $1`,
+		limit+1,
 	)
 	err := row.Scan(&count)
 	return count, err
@@ -399,16 +399,16 @@ func (s Selecta) fetchMediaCount(afterKey string, limit int) (int, error) {
 	var count int
 	if len(afterKey) > 0 {
 		row := s.db.QueryRow(
-			`SELECT count(*) FROM media WHERE sort_key < :sortKey ORDER BY sort_key DESC LIMIT :limit`,
-			sql.Named("limit", limit+1),
-			sql.Named("sortKey", afterKey),
+			`SELECT count(*) FROM media WHERE sort_key < $1 ORDER BY sort_key DESC LIMIT $2`,
+			afterKey,
+			limit+1,
 		)
 		err := row.Scan(&count)
 		return count, err
 	}
 	row := s.db.QueryRow(
-		`SELECT count(*) FROM media ORDER BY sort_key DESC LIMIT :limit`,
-		sql.Named("limit", limit+1),
+		`SELECT count(*) FROM media ORDER BY sort_key DESC LIMIT $1`,
+		limit+1,
 	)
 	err := row.Scan(&count)
 	return count, err

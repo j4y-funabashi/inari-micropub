@@ -380,17 +380,25 @@ func (s Server) handleMicropub(baseURL string) http.HandlerFunc {
 		if r.Method == "POST" {
 			body := bytes.Buffer{}
 			body.ReadFrom(r.Body)
-			response = s.CreatePost(
+			createResponse, err := s.CreatePost(
 				baseURL,
 				contentType,
 				body.String(),
 				tokenRes,
 			)
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Location", createResponse.Location)
+			w.WriteHeader(http.StatusAccepted)
+			return
 		}
 
 		for k, v := range response.Headers {
 			w.Header().Set(k, v)
 		}
+
 		w.WriteHeader(response.StatusCode)
 		w.Write([]byte(response.Body))
 	}
@@ -419,12 +427,16 @@ func (s Server) QueryConfig() HttpResponse {
 	}
 }
 
+type CreatePostResponse struct {
+	Location string
+}
+
 func (s Server) CreatePost(
 	baseURL,
 	contentType,
 	body string,
 	tokenRes indieauth.TokenResponse,
-) HttpResponse {
+) (*CreatePostResponse, error) {
 
 	// create uid and post permalink
 	uid := uuid.NewV4()
@@ -435,9 +447,7 @@ func (s Server) CreatePost(
 	mf, err := s.buildMF(body, contentType)
 	if err != nil {
 		s.logger.WithError(err).Error("failed to build mf")
-		return HttpResponse{
-			StatusCode: http.StatusInternalServerError,
-		}
+		return nil, err
 	}
 
 	uuid := uid.String()
@@ -454,18 +464,12 @@ func (s Server) CreatePost(
 	err = s.eventLog.Append(event)
 	if err != nil {
 		s.logger.WithError(err).Error("failed to save post")
-		return HttpResponse{
-			StatusCode: http.StatusInternalServerError,
-		}
+		return nil, err
 	}
 
-	headers := map[string]string{
-		"Location": postURL,
-	}
-	return HttpResponse{
-		StatusCode: http.StatusAccepted,
-		Headers:    headers,
-	}
+	return &CreatePostResponse{
+		Location: postURL,
+	}, nil
 }
 
 func (s Server) buildMF(body, contentType string) (mf2.MicroFormat, error) {
