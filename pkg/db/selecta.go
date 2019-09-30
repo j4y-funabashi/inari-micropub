@@ -380,7 +380,7 @@ func (s Selecta) fetchPostCount(afterKey string, limit int) (int, error) {
 	var count int
 	if len(afterKey) > 0 {
 		row := s.db.QueryRow(
-			`SELECT count(*) FROM posts WHERE sort_key < $1 ORDER BY sort_key DESC LIMIT $2`,
+			`SELECT count(sort_key) FROM posts WHERE sort_key < $1 LIMIT $2`,
 			afterKey,
 			limit+1,
 		)
@@ -388,7 +388,7 @@ func (s Selecta) fetchPostCount(afterKey string, limit int) (int, error) {
 		return count, err
 	}
 	row := s.db.QueryRow(
-		`SELECT count(*) FROM posts ORDER BY sort_key DESC LIMIT $1`,
+		`SELECT count(sort_key) FROM posts LIMIT $1`,
 		limit+1,
 	)
 	err := row.Scan(&count)
