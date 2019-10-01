@@ -71,6 +71,7 @@ func main() {
 
 	// routing
 	router := mux.NewRouter()
+	router.StrictSlash(true)
 	micropubServer.Routes(router.PathPrefix("/micropub").Subrouter())
 	frontendServer.Routes(router)
 
