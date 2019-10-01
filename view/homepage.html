@@ -27,16 +27,11 @@
 </div>
 
 <div>
-  {{ range .PostList }}
-  <span>
-    {{ with .Photo }} {{ range . }}
-    <a href="{{ .Url }}"
-      ><img
-        src="https://images.weserv.nl/?w=240&h=240&t=square&a=entropy&url={{ . }}"
-    /></a>
-    {{ end }} {{ end }}
-  </span>
-  {{ end }}
+  {{ range .PostList }} {{ with .Photo }} {{ range . }}
+  <img
+    src="https://images.weserv.nl/?w=240&h=240&t=square&a=entropy&url={{ . }}"
+  />
+  {{ end }} {{ end }} {{ end }}
 </div>
 
 {{ end }}
