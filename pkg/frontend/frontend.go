@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"net/http"
 
-	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/j4y_funabashi/inari-micropub/pkg/app"
+	"github.com/sirupsen/logrus"
 )
 
 type Server struct {
