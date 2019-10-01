@@ -7,6 +7,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/j4y_funabashi/inari-micropub/pkg/db"
 	"github.com/j4y_funabashi/inari-micropub/pkg/eventlog"
+	"github.com/j4y_funabashi/inari-micropub/pkg/frontend"
 	"github.com/j4y_funabashi/inari-micropub/pkg/indieauth"
 	"github.com/j4y_funabashi/inari-micropub/pkg/micropub"
 	"github.com/j4y_funabashi/inari-micropub/pkg/s3"
@@ -66,9 +67,12 @@ func main() {
 		mediaServer,
 	)
 
+	frontendServer := frontend.NewServer()
+
 	// routing
 	router := mux.NewRouter()
 	micropubServer.Routes(router.PathPrefix("/micropub").Subrouter())
+	frontendServer.Routes(router)
 
 	go eventLog.Replay()
 
