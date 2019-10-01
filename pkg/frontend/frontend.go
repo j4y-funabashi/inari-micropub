@@ -1,7 +1,7 @@
 package frontend
 
 import (
-	"fmt"
+	"bytes"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -19,8 +19,22 @@ func (s Server) Routes(router *mux.Router) {
 
 func (s Server) handleHomepage() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		// view.render
+		outBuf := new(bytes.Buffer)
+		err := RenderHomepage(outBuf)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-type", "text/html; charset=UTF-8")
 		w.WriteHeader(http.StatusOK)
-		fmt.Fprintf(w, "%s", "jay.funabashi")
+		_, err = w.Write(outBuf.Bytes())
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		return
 	}
 }
