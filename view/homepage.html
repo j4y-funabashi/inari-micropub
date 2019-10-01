@@ -26,4 +26,12 @@
   </div>
 </div>
 
+<div>
+  {{ range .PostList }}
+  <div>
+    {{ .URL }}
+  </div>
+  {{ end }}
+</div>
+
 {{ end }}

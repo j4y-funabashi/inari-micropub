@@ -5,12 +5,17 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/j4y_funabashi/inari-micropub/pkg/app"
 )
 
-type Server struct{}
+type Server struct {
+	App app.Server
+}
 
-func NewServer() Server {
-	return Server{}
+func NewServer(a app.Server) Server {
+	return Server{
+		App: a,
+	}
 }
 
 func (s Server) Routes(router *mux.Router) {
@@ -20,9 +25,18 @@ func (s Server) Routes(router *mux.Router) {
 func (s Server) handleHomepage() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
+		// fetch latest posts
+		limit := 10
+		after := ""
+		postList, err := s.App.QueryPostList(limit, after)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
 		// view.render
 		outBuf := new(bytes.Buffer)
-		err := RenderHomepage(outBuf)
+		err = RenderHomepage(outBuf, postList.PostList)
 		if err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
 			return

@@ -283,10 +283,14 @@ func TestCreateThenQuery(t *testing.T) {
 		t.Errorf("failed to create post: %s", err.Error())
 	}
 
-	result := mpserver.QuerySourceByURL(createResponse.Location)
-
+	byURLResult := mpserver.QuerySourceByURL(createResponse.Location)
 	is.Equal(
-		strings.TrimSpace(result.Body),
+		strings.TrimSpace(byURLResult.Body),
 		`{"type":["h-entry"],"properties":{"author":[""],"photo":["testphoto1.jpg"],"published":["2019-01-28T13:13:13+00:00"],"uid":["test123"],"url":["/p/test123"]}}`,
 	)
+
+	limit := 1
+	after := ""
+	listResult := mpserver.QuerySourceList(limit, after)
+	t.Errorf("HORSE!!! %+v", listResult)
 }

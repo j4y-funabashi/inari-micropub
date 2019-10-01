@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
+	"github.com/j4y_funabashi/inari-micropub/pkg/app"
 	"github.com/j4y_funabashi/inari-micropub/pkg/db"
 	"github.com/j4y_funabashi/inari-micropub/pkg/eventlog"
 	"github.com/j4y_funabashi/inari-micropub/pkg/frontend"
@@ -67,7 +68,11 @@ func main() {
 		mediaServer,
 	)
 
-	frontendServer := frontend.NewServer()
+	inari := app.New(
+		logger,
+		selecta,
+	)
+	frontendServer := frontend.NewServer(inari)
 
 	// routing
 	router := mux.NewRouter()
