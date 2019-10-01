@@ -72,7 +72,7 @@ func main() {
 		logger,
 		selecta,
 	)
-	frontendServer := frontend.NewServer(inari)
+	frontendServer := frontend.NewServer(inari, logger)
 
 	// routing
 	router := mux.NewRouter()

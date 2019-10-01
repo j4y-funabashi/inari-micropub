@@ -4,17 +4,23 @@ import (
 	"bytes"
 	"net/http"
 
+	"github.com/Sirupsen/logrus"
 	"github.com/gorilla/mux"
 	"github.com/j4y_funabashi/inari-micropub/pkg/app"
 )
 
 type Server struct {
-	App app.Server
+	App    app.Server
+	logger *logrus.Logger
 }
 
-func NewServer(a app.Server) Server {
+func NewServer(
+	a app.Server,
+	logger *logrus.Logger,
+) Server {
 	return Server{
-		App: a,
+		App:    a,
+		logger: logger,
 	}
 }
 
@@ -30,6 +36,7 @@ func (s Server) handleHomepage() http.HandlerFunc {
 		after := ""
 		postList, err := s.App.QueryPostList(limit, after)
 		if err != nil {
+			s.logger.WithError(err).Error("failed to query post list")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -38,6 +45,7 @@ func (s Server) handleHomepage() http.HandlerFunc {
 		outBuf := new(bytes.Buffer)
 		err = RenderHomepage(outBuf, postList.PostList)
 		if err != nil {
+			s.logger.WithError(err).Error("failed to render homepage")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -45,6 +53,7 @@ func (s Server) handleHomepage() http.HandlerFunc {
 		w.WriteHeader(http.StatusOK)
 		_, err = w.Write(outBuf.Bytes())
 		if err != nil {
+			s.logger.WithError(err).Error("failed to write html")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
