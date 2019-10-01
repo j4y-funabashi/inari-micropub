@@ -28,7 +28,6 @@ func main() {
 
 	// deps
 	logger := logrus.New()
-	logger.Formatter = &logrus.JSONFormatter{}
 
 	s3Client, err := s3.NewClient(s3Endpoint)
 	if err != nil {
