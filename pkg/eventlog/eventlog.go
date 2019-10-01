@@ -168,6 +168,10 @@ func (e PostCreatedEvent) save(sqlClient *sql.Tx, s3Client s3.Client, s3KeyPrefi
 
 func (e PostCreatedEvent) reduce(sqlClient *sql.Tx) error {
 
+	if e.EventData.GetFirstString("photo") == "" {
+		return nil
+	}
+
 	published, err := time.Parse(time.RFC3339Nano, e.EventData.GetFirstString("published"))
 	if err != nil {
 		return err
