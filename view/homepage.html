@@ -29,7 +29,13 @@
 <div>
   {{ range .PostList }}
   <div>
-    {{ .URL }}
+    {{ with .Photo }}
+    <div>
+      {{ range . }} {{ . }} {{ end }}
+    </div>
+    {{ end }}
+
+    <a href="{{ .Url }}">{{ .Published }}</a>
   </div>
   {{ end }}
 </div>
