@@ -31,7 +31,11 @@
   <div>
     {{ with .Photo }}
     <div>
-      {{ range . }} {{ . }} {{ end }}
+      {{ range . }}
+      <img
+        src="https://images.weserv.nl/?w=240&h=240&t=square&a=entropy&url={{ . }}"
+      />
+      {{ end }}
     </div>
     {{ end }}
 
