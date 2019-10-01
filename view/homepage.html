@@ -28,19 +28,14 @@
 
 <div>
   {{ range .PostList }}
-  <div>
-    {{ with .Photo }}
-    <div>
-      {{ range . }}
-      <img
+  <span>
+    {{ with .Photo }} {{ range . }}
+    <a href="{{ .Url }}"
+      ><img
         src="https://images.weserv.nl/?w=240&h=240&t=square&a=entropy&url={{ . }}"
-      />
-      {{ end }}
-    </div>
-    {{ end }}
-
-    <a href="{{ .Url }}">{{ .Published }}</a>
-  </div>
+    /></a>
+    {{ end }} {{ end }}
+  </span>
   {{ end }}
 </div>
 
