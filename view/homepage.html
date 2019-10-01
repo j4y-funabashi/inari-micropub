@@ -1,7 +1,29 @@
 {{ define "content" }}
 
-<div>
-  <h1>Hello!</h1>
+<div class="h-card">
+  <div class="media">
+    <div class="media-left">
+      <img
+        class="u-photo"
+        src="https://j4y.co/profile_pic.jpeg"
+        width="45px"
+        height="45px"
+      />
+    </div>
+    <div class="media-content">
+      <ul>
+        <li>
+          <a class="p-name u-url u-uid" href="https://jay.funabashi.co.uk/"
+            >Jay Funabashi</a
+          >
+        </li>
+        <li><a class="u-email" href="mailto:me@j4y.co" rel="me">Email</a></li>
+        <li>
+          <a href="https://github.com/j4y-funabashi" rel="me">Github</a>
+        </li>
+      </ul>
+    </div>
+  </div>
 </div>
 
 {{ end }}
