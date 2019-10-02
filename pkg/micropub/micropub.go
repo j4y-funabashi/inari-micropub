@@ -379,20 +379,32 @@ func (s Server) handleMicropub(baseURL string) http.HandlerFunc {
 
 		if r.Method == "POST" {
 			body := bytes.Buffer{}
-			body.ReadFrom(r.Body)
-			createResponse, err := s.CreatePost(
-				baseURL,
-				contentType,
-				body.String(),
-				tokenRes,
-			)
+			_, err := body.ReadFrom(r.Body)
 			if err != nil {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
-			w.Header().Set("Location", createResponse.Location)
-			w.WriteHeader(http.StatusAccepted)
-			return
+			action := ParsePostAction(body.String())
+
+			switch action {
+			case "create":
+				createResponse, err := s.CreatePost(
+					baseURL,
+					contentType,
+					body.String(),
+					tokenRes,
+				)
+				if err != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					return
+				}
+				w.Header().Set("Location", createResponse.Location)
+				w.WriteHeader(http.StatusAccepted)
+				return
+			case "update":
+				s.logger.WithField("body", body.String()).Info("I CAN HAZ UPDATEXOIS")
+				return
+			}
 		}
 
 		for k, v := range response.Headers {
@@ -402,6 +414,22 @@ func (s Server) handleMicropub(baseURL string) http.HandlerFunc {
 		w.WriteHeader(response.StatusCode)
 		w.Write([]byte(response.Body))
 	}
+}
+
+func ParsePostAction(body string) string {
+
+	e := struct {
+		Action string `json:"action"`
+	}{}
+	err := json.Unmarshal([]byte(body), &e)
+	if err != nil {
+		return "create"
+	}
+
+	if e.Action != "" {
+		return e.Action
+	}
+	return "create"
 }
 
 func (s Server) QueryConfig() HttpResponse {
@@ -438,9 +466,8 @@ func (s Server) CreatePost(
 	tokenRes indieauth.TokenResponse,
 ) (*CreatePostResponse, error) {
 
-	// create uid and post permalink
+	// create post
 	uid := uuid.NewV4()
-
 	s.logger.
 		WithField("content_type", contentType).
 		Info("checking Content-type header")
@@ -449,7 +476,6 @@ func (s Server) CreatePost(
 		s.logger.WithError(err).Error("failed to build mf")
 		return nil, err
 	}
-
 	uuid := uid.String()
 	if mf.GetFirstString("uid") != "" {
 		uuid = mf.GetFirstString("uid")
@@ -459,8 +485,9 @@ func (s Server) CreatePost(
 	s.logger.
 		WithField("mf", mf).
 		Info("mf built")
-
 	event := eventlog.NewPostCreated(mf)
+
+	// add event to eventlog
 	err = s.eventLog.Append(event)
 	if err != nil {
 		s.logger.WithError(err).Error("failed to save post")
