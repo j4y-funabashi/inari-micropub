@@ -33,7 +33,7 @@ func (s Server) handleHomepage() http.HandlerFunc {
 
 		// fetch latest posts
 		limit := 12
-		after := ""
+		after := r.URL.Query().Get("after")
 		postList, err := s.App.QueryPostList(limit, after)
 		if err != nil {
 			s.logger.WithError(err).Error("failed to query post list")
