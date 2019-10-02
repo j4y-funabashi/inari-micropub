@@ -32,7 +32,7 @@ func (s Server) handleHomepage() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
 		// fetch latest posts
-		limit := 10
+		limit := 12
 		after := ""
 		postList, err := s.App.QueryPostList(limit, after)
 		if err != nil {
@@ -43,7 +43,7 @@ func (s Server) handleHomepage() http.HandlerFunc {
 
 		// view.render
 		outBuf := new(bytes.Buffer)
-		err = RenderHomepage(outBuf, postList.PostList)
+		err = RenderHomepage(outBuf, postList.PostList, postList.AfterKey)
 		if err != nil {
 			s.logger.WithError(err).Error("failed to render homepage")
 			w.WriteHeader(http.StatusInternalServerError)

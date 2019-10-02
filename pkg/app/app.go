@@ -13,6 +13,7 @@ type Server struct {
 
 type QueryPostListResponse struct {
 	PostList []mf2.MicroFormatView
+	AfterKey string
 }
 
 func New(
@@ -38,5 +39,6 @@ func (s Server) QueryPostList(limit int, after string) (*QueryPostListResponse, 
 
 	return &QueryPostListResponse{
 		PostList: postList,
+		AfterKey: pl.Paging.After,
 	}, nil
 }
