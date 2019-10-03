@@ -1,66 +1,68 @@
 {{ define "content" }}
 
-<section class="section">
-  <div class="container">
-    <div class="h-card">
-      <div class="media">
-        <div class="media-left">
+<div class="container">
+  <div class="h-card">
+    <div class="media">
+      <div class="media-left">
+        <img
+          class="u-photo"
+          src="https://j4y.co/profile_pic.jpeg"
+          width="45px"
+          height="45px"
+        />
+      </div>
+      <div class="media-content">
+        <ul>
+          <li>
+            <a class="p-name u-url u-uid" href="https://jay.funabashi.co.uk/"
+              >Jay Funabashi</a
+            >
+          </li>
+          <li>
+            <a class="u-email" href="mailto:me@j4y.co" rel="me">Email</a>
+          </li>
+          <li>
+            <a href="https://github.com/j4y-funabashi" rel="me">Github</a>
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    {{ range .PostList }}
+
+    <div class="card">
+      {{ with .Photo }} {{ range . }}
+      <div class="card-image">
+        <figure class="image is-square">
           <img
-            class="u-photo"
-            src="https://j4y.co/profile_pic.jpeg"
-            width="45px"
-            height="45px"
+            src="https://images.weserv.nl/?w=540&h=540&t=square&a=entropy&url={{ . }}"
           />
-        </div>
-        <div class="media-content">
-          <ul>
-            <li>
-              <a class="p-name u-url u-uid" href="https://jay.funabashi.co.uk/"
-                >Jay Funabashi</a
-              >
-            </li>
-            <li>
-              <a class="u-email" href="mailto:me@j4y.co" rel="me">Email</a>
-            </li>
-            <li>
-              <a href="https://github.com/j4y-funabashi" rel="me">Github</a>
-            </li>
-          </ul>
+        </figure>
+      </div>
+      {{ end }} {{ end }}
+      <div class="card-content">
+        <div class="content">
+          <p>{{ .Content }}</p>
+          <time
+            class="dt-published has-text-grey-light"
+            datetime="{{ .Published }}"
+          >
+            {{ .Published }}
+          </time>
         </div>
       </div>
     </div>
 
-    <div>
-      {{ range .PostList }}
-
-      <div class="card">
-        {{ with .Photo }} {{ range . }}
-        <div class="card-image">
-          <figure class="image is-square">
-            <img
-              src="https://images.weserv.nl/?w=540&h=540&t=square&a=entropy&url={{ . }}"
-            />
-          </figure>
-        </div>
-        {{ end }} {{ end }}
-        <div class="card-content">
-          <div class="content">
-            <time class="dt-published" datetime="{{ .Published }}">
-              {{ .Published }}
-            </time>
-          </div>
-        </div>
-      </div>
-
-      {{ end }}
-    </div>
-
-    {{ with .AfterKey }}
-    <div>
-      <a class="button" href="?after={{ . }}">Next Page</a>
-    </div>
     {{ end }}
   </div>
-</section>
+
+  {{ with .AfterKey }}
+  <div>
+    <a class="button" href="?after={{ . }}">Next Page</a>
+  </div>
+  {{ end }}
+</div>
 
 {{ end }}
