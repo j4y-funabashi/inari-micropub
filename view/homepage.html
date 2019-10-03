@@ -36,9 +36,11 @@
       <div class="card">
         {{ with .Photo }} {{ range . }}
         <div class="card-image">
-          <img
-            src="https://images.weserv.nl/?w=540&h=540&t=square&a=entropy&url={{ . }}"
-          />
+          <figure class="image is-square">
+            <img
+              src="https://images.weserv.nl/?w=540&h=540&t=square&a=entropy&url={{ . }}"
+            />
+          </figure>
         </div>
         {{ end }} {{ end }}
         <div class="card-content">
