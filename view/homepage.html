@@ -27,11 +27,26 @@
 </div>
 
 <div>
-  {{ range .PostList }} {{ with .Photo }} {{ range . }}
-  <img
-    src="https://images.weserv.nl/?w=240&h=240&t=square&a=entropy&url={{ . }}"
-  />
-  {{ end }} {{ end }} {{ end }}
+  {{ range .PostList }}
+
+  <div class="card">
+    {{ with .Photo }} {{ range . }}
+    <div class="card-image">
+      <img
+        src="https://images.weserv.nl/?w=540&h=540&t=square&a=entropy&url={{ . }}"
+      />
+    </div>
+    {{ end }} {{ end }}
+    <div class="card-content">
+      <div class="content">
+        <time class="dt-published" datetime="{{ .Published }}">
+          {{ .Published }}
+        </time>
+      </div>
+    </div>
+  </div>
+
+  {{ end }}
 </div>
 
 {{ with .AfterKey }}
