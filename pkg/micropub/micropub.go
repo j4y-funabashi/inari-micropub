@@ -402,7 +402,7 @@ func (s Server) handleMicropub(baseURL string) http.HandlerFunc {
 				w.WriteHeader(http.StatusAccepted)
 				return
 			case "update":
-				s.logger.WithField("body", body.String()).Info("I CAN HAZ UPDATEXOIS")
+				s.UpdatePost(body.String())
 				return
 			}
 		}
@@ -414,6 +414,12 @@ func (s Server) handleMicropub(baseURL string) http.HandlerFunc {
 		w.WriteHeader(response.StatusCode)
 		w.Write([]byte(response.Body))
 	}
+}
+
+func (s Server) UpdatePost(body string) {
+	s.logger.
+		WithField("body", body).
+		Info("I CAN HAZ UPDATEXOIS")
 }
 
 func ParsePostAction(body string) string {
