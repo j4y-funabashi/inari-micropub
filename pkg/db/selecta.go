@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"strings"
 
+	"github.com/j4y_funabashi/inari-micropub/pkg/app"
 	"github.com/j4y_funabashi/inari-micropub/pkg/mf2"
 )
 
@@ -28,28 +29,27 @@ type Selecta struct {
 	db *sql.DB
 }
 
-func (s Selecta) SelectMediaYearList() ([]ArchiveLinkYear, error) {
+func (s Selecta) SelectMediaYearList() []app.Year {
 
-	list := []ArchiveLinkYear{}
-
+	list := []app.Year{}
 	rows, err := s.db.Query(
 		`SELECT year,count(*) as count FROM media GROUP BY year ORDER BY sort_key DESC `,
 	)
 	if err != nil {
-		return list, err
+		return list
 	}
 
 	defer rows.Close()
 
 	for rows.Next() {
-		item := ArchiveLinkYear{}
+		item := app.Year{}
 		err := rows.Scan(&item.Year, &item.Count)
 		if err != nil {
-			return list, err
+			return list
 		}
 		list = append(list, item)
 	}
-	return list, nil
+	return list
 }
 
 func (s Selecta) SelectMonthList(year string) ([]ArchiveLinkMonth, error) {
@@ -134,7 +134,7 @@ func (s Selecta) SelectYearList() ([]ArchiveLinkYear, error) {
 	return list, nil
 }
 
-func (s Selecta) SelectPostList(limit int, afterKey string) (mf2.PostList, error) {
+func (s Selecta) SelectPostList(limit int, afterKey string) mf2.PostList {
 
 	postList := mf2.PostList{
 		Paging: &mf2.ListPaging{},
@@ -142,11 +142,11 @@ func (s Selecta) SelectPostList(limit int, afterKey string) (mf2.PostList, error
 
 	count, err := s.fetchPostCount(afterKey, limit)
 	if err != nil {
-		return postList, err
+		return postList
 	}
 
 	postList, err = s.fetchPostList(afterKey, count, limit)
-	return postList, err
+	return postList
 }
 
 func (s Selecta) SelectPostByURL(uid string) (mf2.MicroFormat, error) {

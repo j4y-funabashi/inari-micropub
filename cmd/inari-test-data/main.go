@@ -25,6 +25,12 @@ func main() {
 		return
 	}
 
+	err = s3Client.CreateBucket(S3Bucket)
+	if err != nil {
+		logger.WithError(err).Error("failed to create s3 bucket")
+		return
+	}
+
 	sqlDB, err := db.OpenDB()
 	if err != nil {
 		logger.WithError(err).Error("failed to open DB")

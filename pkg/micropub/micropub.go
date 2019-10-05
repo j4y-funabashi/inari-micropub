@@ -645,15 +645,9 @@ func (s Server) QueryYearsList() HttpResponse {
 }
 
 func (s Server) QueryMediaYearsList() HttpResponse {
-	body, err := s.selecta.SelectMediaYearList()
-	if err != nil {
-		return HttpResponse{
-			Body: err.Error(),
-		}
-	}
-
+	body := s.selecta.SelectMediaYearList()
 	buf := bytes.NewBuffer([]byte{})
-	err = json.NewEncoder(buf).Encode(body)
+	err := json.NewEncoder(buf).Encode(body)
 	if err != nil {
 		return HttpResponse{
 			Body: err.Error(),
@@ -695,16 +689,9 @@ func (s Server) QueryMediaMonthsList(year string) HttpResponse {
 }
 
 func (s Server) QuerySourceList(limit int, after string) HttpResponse {
-	body, err := s.selecta.SelectPostList(limit, after)
-	if err != nil {
-		return HttpResponse{
-			Body:       err.Error(),
-			StatusCode: http.StatusInternalServerError,
-		}
-	}
-
+	body := s.selecta.SelectPostList(limit, after)
 	buf := bytes.NewBuffer([]byte{})
-	err = json.NewEncoder(buf).Encode(body)
+	err := json.NewEncoder(buf).Encode(body)
 	if err != nil {
 		return HttpResponse{
 			Body:       err.Error(),

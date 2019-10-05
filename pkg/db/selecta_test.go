@@ -2,6 +2,7 @@ package db_test
 
 import (
 	"database/sql"
+	"os"
 	"strings"
 	"testing"
 
@@ -198,7 +199,7 @@ func TestSelectPostList(t *testing.T) {
 
 			// ACT
 			selecta := db.NewSelecta(sqlClient)
-			result, err := selecta.SelectPostList(tt.limit, tt.after)
+			result := selecta.SelectPostList(tt.limit, tt.after)
 			if err != nil {
 				t.Fatal("failed to select post list: ")
 			}
@@ -212,6 +213,7 @@ func TestSelectPostList(t *testing.T) {
 }
 
 func buildTestMpServer(t *testing.T) micropub.Server {
+
 	mediaEndpoint := ""
 	tokenEndpoint := ""
 	logger := logrus.New()
@@ -261,6 +263,9 @@ func buildTestMpServer(t *testing.T) micropub.Server {
 }
 
 func TestCreateThenQuery(t *testing.T) {
+	if os.Getenv("INTEGRATION_TEST") != "1" {
+		t.SkipNow()
+	}
 
 	// ARRANGE
 	is := is.NewRelaxed(t)
@@ -288,4 +293,24 @@ func TestCreateThenQuery(t *testing.T) {
 		strings.TrimSpace(byURLResult.Body),
 		`{"type":["h-entry"],"properties":{"author":[""],"photo":["testphoto1.jpg"],"published":["2019-01-28T13:13:13+00:00"],"uid":["test123"],"url":["/p/test123"]}}`,
 	)
+}
+
+func TestSelectMediaList1(t *testing.T) {
+	if os.Getenv("INTEGRATION_TEST") != "1" {
+		t.SkipNow()
+	}
+
+	// ARRANGE
+	is := is.NewRelaxed(t)
+
+	sqlClient, err := db.OpenDB()
+	if err != nil {
+		t.Fatal("failed to open DB")
+	}
+	selecta := db.NewSelecta(sqlClient)
+
+	// ACT
+	result := selecta.SelectMediaYearList()
+	t.Logf("%+v", result)
+	is.Equal("HORSE!", "BADGER!")
 }
