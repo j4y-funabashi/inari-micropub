@@ -33,7 +33,14 @@ func (s Selecta) SelectMediaYearList() []app.Year {
 
 	list := []app.Year{}
 	rows, err := s.db.Query(
-		`SELECT year,count(*) as count FROM media GROUP BY year ORDER BY sort_key DESC `,
+		`SELECT
+med1.year, med1.count, published.published_count
+FROM
+(SELECT year,count(*) as count FROM media GROUP BY year) med1
+LEFT JOIN
+(SELECT year,count(*) as published_count FROM media INNER JOIN media_published ON media.id = media_published.id GROUP BY year) published
+ON med1.year = published.year
+ ORDER BY year DESC;`,
 	)
 	if err != nil {
 		return list
@@ -43,7 +50,7 @@ func (s Selecta) SelectMediaYearList() []app.Year {
 
 	for rows.Next() {
 		item := app.Year{}
-		err := rows.Scan(&item.Year, &item.Count)
+		err := rows.Scan(&item.Year, &item.Count, &item.PublishedCount)
 		if err != nil {
 			return list
 		}
