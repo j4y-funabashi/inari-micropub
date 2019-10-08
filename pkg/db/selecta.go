@@ -88,33 +88,40 @@ func (s Selecta) SelectMonthList(year string) ([]ArchiveLinkMonth, error) {
 	return list, nil
 }
 
-func (s Selecta) SelectMediaMonthList(year string) ([]ArchiveLinkMonth, error) {
+func (s Selecta) SelectMediaMonthList(year string) []app.Month {
 
-	list := []ArchiveLinkMonth{}
+	list := []app.Month{}
 
 	if year == "" {
-		return list, nil
+		return list
 	}
 
 	rows, err := s.db.Query(
-		`SELECT month,count(*) as count FROM media WHERE year = $1 GROUP BY month ORDER BY sort_key DESC `,
+		`SELECT
+med1.month, med1.count, published.published_count
+FROM
+(SELECT month, count(*) as count FROM media WHERE year = $1 GROUP BY month) med1
+LEFT JOIN
+(SELECT month,count(*) as published_count FROM media INNER JOIN media_published ON media.id = media_published.id WHERE year = $1 GROUP BY month) published
+ON med1.month = published.month
+ ORDER BY month DESC;`,
 		year,
 	)
 	if err != nil {
-		return list, err
+		return list
 	}
 
 	defer rows.Close()
 
 	for rows.Next() {
-		item := ArchiveLinkMonth{}
+		item := app.Month{}
 		err := rows.Scan(&item.Month, &item.Count)
 		if err != nil {
-			return list, err
+			return list
 		}
 		list = append(list, item)
 	}
-	return list, nil
+	return list
 }
 
 func (s Selecta) SelectYearList() ([]ArchiveLinkYear, error) {

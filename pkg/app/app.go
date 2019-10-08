@@ -12,8 +12,15 @@ type Year struct {
 	PublishedCount int
 }
 
+type Month struct {
+	Month          string
+	Count          int
+	PublishedCount int
+}
+
 type Selecta interface {
 	SelectMediaYearList() []Year
+	SelectMediaMonthList(currentYear string) []Month
 	SelectPostList(limit int, afterKey string) mf2.PostList
 }
 
@@ -24,18 +31,36 @@ func New(selecta Selecta) Server {
 }
 
 type ShowMediaResponse struct {
-	Years       []Year
-	CurrentYear string
+	Years        []Year
+	Months       []Month
+	CurrentYear  string
+	CurrentMonth string
 }
 
 // ShowMedia fetches years and determines current year
 func (s Server) ShowMedia(selectedYear, selectedMonth, selectedDay string) ShowMediaResponse {
 	years := s.selecta.SelectMediaYearList()
 	currentYear := parseCurrentYear(selectedYear, years)
+	months := s.selecta.SelectMediaMonthList(currentYear)
+	currentMonth := parseCurrentMonth(selectedMonth, months)
 	return ShowMediaResponse{
-		Years:       years,
-		CurrentYear: currentYear,
+		Years:        years,
+		CurrentYear:  currentYear,
+		Months:       months,
+		CurrentMonth: currentMonth,
 	}
+}
+
+func parseCurrentMonth(selectedMonth string, months []Month) string {
+	for _, yr := range months {
+		if yr.Month == selectedMonth {
+			return selectedMonth
+		}
+	}
+	if len(months) > 0 {
+		return months[0].Month
+	}
+	return ""
 }
 
 func parseCurrentYear(selectedYear string, years []Year) string {

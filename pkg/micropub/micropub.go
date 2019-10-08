@@ -664,15 +664,10 @@ func (s Server) QueryMediaYearsList() HttpResponse {
 }
 
 func (s Server) QueryMediaMonthsList(year string) HttpResponse {
-	body, err := s.selecta.SelectMediaMonthList(year)
-	if err != nil {
-		return HttpResponse{
-			Body: err.Error(),
-		}
-	}
+	body := s.selecta.SelectMediaMonthList(year)
 
 	buf := bytes.NewBuffer([]byte{})
-	err = json.NewEncoder(buf).Encode(body)
+	err := json.NewEncoder(buf).Encode(body)
 	if err != nil {
 		return HttpResponse{
 			Body: err.Error(),

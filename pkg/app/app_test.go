@@ -9,7 +9,8 @@ import (
 )
 
 type mockSelecta struct {
-	years []app.Year
+	years  []app.Year
+	months []app.Month
 }
 
 var stubYear1 = app.Year{
@@ -23,6 +24,21 @@ var stubYear2 = app.Year{
 	PublishedCount: 100,
 }
 
+var stubMonth1 = app.Month{
+	Month:          "1",
+	Count:          1,
+	PublishedCount: 10,
+}
+var stubMonth2 = app.Month{
+	Month:          "12",
+	Count:          10,
+	PublishedCount: 100,
+}
+
+func (s mockSelecta) SelectMediaMonthList(yr string) []app.Month {
+	return s.months
+}
+
 func (s mockSelecta) SelectMediaYearList() []app.Year {
 	return s.years
 }
@@ -31,13 +47,14 @@ func (s mockSelecta) SelectPostList(limit int, afterKey string) mf2.PostList {
 	return mf2.PostList{}
 }
 
-func newMockSelecta(years []app.Year) mockSelecta {
+func newMockSelecta(years []app.Year, months []app.Month) mockSelecta {
 	return mockSelecta{
-		years: years,
+		years:  years,
+		months: months,
 	}
 }
 
-func TestShowMedia(t *testing.T) {
+func TestShowMediaYears(t *testing.T) {
 	var tests = []struct {
 		name      string
 		y         string
@@ -91,14 +108,64 @@ func TestShowMedia(t *testing.T) {
 
 		is := is.NewRelaxed(t)
 		tt := tt
-		selecta := newMockSelecta(tt.yearStubs)
+		selecta := newMockSelecta(tt.yearStubs, []app.Month{})
 
 		t.Run(tt.name, func(t *testing.T) {
+			// arrange
 			sut := app.New(selecta)
 
+			// act
 			result := sut.ShowMedia(tt.y, tt.m, tt.d)
 
-			is.Equal(tt.expected, result)
+			// assert
+			is.Equal(tt.expected.Years, result.Years)
+			is.Equal(tt.expected.CurrentYear, result.CurrentYear)
+		})
+	}
+}
+
+func TestShowMediaMonths(t *testing.T) {
+	var tests = []struct {
+		name       string
+		y          string
+		m          string
+		d          string
+		monthStubs []app.Month
+		expected   app.ShowMediaResponse
+	}{
+		{
+			name: "current month is selected month",
+			m:    "1",
+			monthStubs: []app.Month{
+				stubMonth1,
+				stubMonth2,
+			},
+			expected: app.ShowMediaResponse{
+				Months: []app.Month{
+					stubMonth1,
+					stubMonth2,
+				},
+				CurrentMonth: "1",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+
+		is := is.NewRelaxed(t)
+		tt := tt
+		selecta := newMockSelecta([]app.Year{}, tt.monthStubs)
+
+		t.Run(tt.name, func(t *testing.T) {
+			// arrange
+			sut := app.New(selecta)
+
+			// act
+			result := sut.ShowMedia(tt.y, tt.m, tt.d)
+
+			// assert
+			is.Equal(tt.expected.Months, result.Months)
+			is.Equal(tt.expected.CurrentMonth, result.CurrentMonth)
 		})
 	}
 }
