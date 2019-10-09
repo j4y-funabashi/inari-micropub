@@ -98,7 +98,7 @@ func (s Selecta) SelectMediaMonthList(year string) []app.Month {
 
 	rows, err := s.db.Query(
 		`SELECT
-med1.month, med1.count, published.published_count
+med1.month, med1.count, COALESCE(published.published_count,0)
 FROM
 (SELECT month, count(*) as count FROM media WHERE year = $1 GROUP BY month) med1
 LEFT JOIN
