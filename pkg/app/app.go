@@ -1,9 +1,13 @@
 package app
 
-import "github.com/j4y_funabashi/inari-micropub/pkg/mf2"
+import (
+	"github.com/j4y_funabashi/inari-micropub/pkg/mf2"
+	"github.com/sirupsen/logrus"
+)
 
 type Server struct {
 	selecta Selecta
+	logger  *logrus.Logger
 }
 
 type Year struct {
@@ -20,13 +24,14 @@ type Month struct {
 
 type Selecta interface {
 	SelectMediaYearList() []Year
-	SelectMediaMonthList(currentYear string) []Month
+	SelectMediaMonthList(currentYear string) ([]Month, error)
 	SelectPostList(limit int, afterKey string) mf2.PostList
 }
 
-func New(selecta Selecta) Server {
+func New(selecta Selecta, logger *logrus.Logger) Server {
 	return Server{
 		selecta: selecta,
+		logger:  logger,
 	}
 }
 
@@ -41,7 +46,10 @@ type ShowMediaResponse struct {
 func (s Server) ShowMedia(selectedYear, selectedMonth, selectedDay string) ShowMediaResponse {
 	years := s.selecta.SelectMediaYearList()
 	currentYear := parseCurrentYear(selectedYear, years)
-	months := s.selecta.SelectMediaMonthList(currentYear)
+	months, err := s.selecta.SelectMediaMonthList(currentYear)
+	if err != nil {
+		s.logger.WithError(err).Error("failed to select month list")
+	}
 	currentMonth := parseCurrentMonth(selectedMonth, months)
 	return ShowMediaResponse{
 		Years:        years,

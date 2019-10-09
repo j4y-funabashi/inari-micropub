@@ -70,6 +70,7 @@ func main() {
 
 	inari := app.New(
 		selecta,
+		logger,
 	)
 	frontendServer := frontend.NewServer(inari, logger)
 	adminServer := admin.NewServer(inari, logger)

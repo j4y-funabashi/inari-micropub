@@ -3,6 +3,7 @@ package db
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"strings"
 
 	"github.com/j4y_funabashi/inari-micropub/pkg/app"
@@ -88,12 +89,12 @@ func (s Selecta) SelectMonthList(year string) ([]ArchiveLinkMonth, error) {
 	return list, nil
 }
 
-func (s Selecta) SelectMediaMonthList(year string) []app.Month {
+func (s Selecta) SelectMediaMonthList(year string) ([]app.Month, error) {
 
 	list := []app.Month{}
 
 	if year == "" {
-		return list
+		return list, errors.New("cant select month list with empty year")
 	}
 
 	rows, err := s.db.Query(
@@ -109,7 +110,7 @@ ON med1.month = published.month
 		year,
 	)
 	if err != nil {
-		return list
+		return list, err
 	}
 
 	defer rows.Close()
@@ -118,11 +119,11 @@ ON med1.month = published.month
 		item := app.Month{}
 		err := rows.Scan(&item.Month, &item.Count)
 		if err != nil {
-			return list
+			return list, err
 		}
 		list = append(list, item)
 	}
-	return list
+	return list, nil
 }
 
 func (s Selecta) SelectYearList() ([]ArchiveLinkYear, error) {
