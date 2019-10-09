@@ -117,7 +117,7 @@ ON med1.month = published.month
 
 	for rows.Next() {
 		item := app.Month{}
-		err := rows.Scan(&item.Month, &item.Count)
+		err := rows.Scan(&item.Month, &item.Count, &item.PublishedCount)
 		if err != nil {
 			return list, err
 		}
