@@ -185,7 +185,8 @@ func (s Selecta) SelectYearList() ([]ArchiveLinkYear, error) {
 	list := []ArchiveLinkYear{}
 
 	rows, err := s.db.Query(
-		`SELECT year,count(*) as count FROM posts GROUP BY year ORDER BY sort_key DESC `,
+		`SELECT
+year,count(*) as count FROM posts GROUP BY year ORDER BY sort_key DESC `,
 	)
 	if err != nil {
 		return list, err
