@@ -3,7 +3,7 @@ build:
 
 test:
 	docker-compose down -v
-	docker-compose up --build --exit-code-from tests
+	docker-compose up --build --quiet-pull --exit-code-from tests
 
 local:
 	docker-compose -f docker-compose-local.yml down -v

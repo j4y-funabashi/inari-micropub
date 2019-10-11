@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS "media" (
 	"id" TEXT PRIMARY KEY,
 	"year" INTEGER NOT NULL,
 	"month" INTEGER NOT NULL,
+	"day" INTEGER NOT NULL,
 	"sort_key" TEXT NOT NULL,
 	"data" TEXT NOT NULL
 );

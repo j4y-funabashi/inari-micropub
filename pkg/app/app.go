@@ -22,9 +22,16 @@ type Month struct {
 	PublishedCount int
 }
 
+type Day struct {
+	Day            string
+	Count          int
+	PublishedCount int
+}
+
 type Selecta interface {
 	SelectMediaYearList() []Year
 	SelectMediaMonthList(currentYear string) ([]Month, error)
+	SelectMediaDayList(currentYear, currentMonth string) ([]Day, error)
 	SelectPostList(limit int, afterKey string) mf2.PostList
 }
 
@@ -38,30 +45,54 @@ func New(selecta Selecta, logger *logrus.Logger) Server {
 type ShowMediaResponse struct {
 	Years        []Year
 	Months       []Month
+	Days         []Day
 	CurrentYear  string
 	CurrentMonth string
+	CurrentDay   string
 }
 
 // ShowMedia fetches years and determines current year
 func (s Server) ShowMedia(selectedYear, selectedMonth, selectedDay string) ShowMediaResponse {
 	years := s.selecta.SelectMediaYearList()
 	currentYear := parseCurrentYear(selectedYear, years)
+
 	months, err := s.selecta.SelectMediaMonthList(currentYear)
 	if err != nil {
 		s.logger.WithError(err).Error("failed to select month list")
 	}
 	currentMonth := parseCurrentMonth(selectedMonth, months)
+
+	days, err := s.selecta.SelectMediaDayList(currentYear, currentMonth)
+	if err != nil {
+		s.logger.WithError(err).Error("failed to select day list")
+	}
+	currentDay := parseCurrentDay(selectedDay, days)
+
 	return ShowMediaResponse{
 		Years:        years,
 		CurrentYear:  currentYear,
 		Months:       months,
 		CurrentMonth: currentMonth,
+		Days:         days,
+		CurrentDay:   currentDay,
 	}
 }
 
+func parseCurrentDay(selectedDay string, days []Day) string {
+	for _, day := range days {
+		if day.Day == selectedDay {
+			return selectedDay
+		}
+	}
+	if len(days) > 0 {
+		return days[0].Day
+	}
+	return ""
+}
+
 func parseCurrentMonth(selectedMonth string, months []Month) string {
-	for _, yr := range months {
-		if yr.Month == selectedMonth {
+	for _, month := range months {
+		if month.Month == selectedMonth {
 			return selectedMonth
 		}
 	}

@@ -126,6 +126,60 @@ ON med1.month = published.month
 	return list, nil
 }
 
+func (s Selecta) SelectMediaDayList(year, month string) ([]app.Day, error) {
+
+	list := []app.Day{}
+
+	if year == "" {
+		return list, errors.New("cant select day list with empty year")
+	}
+	if month == "" {
+		return list, errors.New("cant select day list with empty month")
+	}
+
+	rows, err := s.db.Query(
+		`SELECT
+med1.day, med1.count, COALESCE(published.published_count,0)
+FROM
+
+(SELECT
+day, count(*) as count
+FROM media
+WHERE year = $1 AND month = $2
+GROUP BY year,month,day) med1
+
+LEFT JOIN
+
+(SELECT
+day, count(*) as published_count
+FROM media
+INNER JOIN media_published ON media.id = media_published.id
+WHERE year = $1 AND month = $2
+GROUP BY year,month,day
+) published
+
+ON med1.day = published.day
+ORDER BY day DESC;`,
+		year,
+		month,
+	)
+	if err != nil {
+		return list, err
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		item := app.Day{}
+		err := rows.Scan(&item.Day, &item.Count, &item.PublishedCount)
+		if err != nil {
+			return list, err
+		}
+		list = append(list, item)
+	}
+	return list, nil
+}
+
 func (s Selecta) SelectYearList() ([]ArchiveLinkYear, error) {
 
 	list := []ArchiveLinkYear{}
@@ -222,7 +276,6 @@ func (s Selecta) SelectMediaByURL(uid string) (mf2.MediaMetadata, error) {
 }
 
 func (s Selecta) SelectMediaMonth(year, month string) (mf2.MediaList, error) {
-
 	return s.fetchMediaMonth(year, month)
 }
 

@@ -112,11 +112,12 @@ func (e MediaUploadedEvent) reduce(sqlClient *sql.Tx) error {
 
 	_, err = sqlClient.Exec(
 		`INSERT INTO media
-			(id, year, month, data, sort_key)
-			VALUES ($1, $2, $3, $4, $5) ON CONFLICT DO NOTHING`,
+			(id, year, month, day, data, sort_key)
+			VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT DO NOTHING`,
 		e.EventData.URL,
 		e.EventData.DateTime.Format("2006"),
 		e.EventData.DateTime.Format("01"),
+		e.EventData.DateTime.Format("02"),
 		buf.String(),
 		e.EventData.DateTime.Format(time.RFC3339)+e.EventData.Uid,
 	)

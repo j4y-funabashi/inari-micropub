@@ -29,10 +29,12 @@ func (s Server) Routes(router *mux.Router) {
 
 func (s Server) handleMedia() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		year := ""
-		month := ""
-		day := ""
+		year := r.URL.Query().Get("year")
+		month := r.URL.Query().Get("month")
+		day := r.URL.Query().Get("day")
+
 		media := s.App.ShowMedia(year, month, day)
+
 		s.logger.WithField("media", media).Info("SHOW ME MEDIA!")
 	}
 }
