@@ -280,6 +280,43 @@ func (s Selecta) SelectMediaMonth(year, month string) (mf2.MediaList, error) {
 	return s.fetchMediaMonth(year, month)
 }
 
+func (s Selecta) SelectMediaDay(year, month, day string) ([]app.Media, error) {
+	mediaList := []app.Media{}
+
+	rows, err := s.db.Query(
+		`SELECT
+media.data
+FROM media
+LEFT JOIN media_published ON media.id = media_published.id
+WHERE year = $1
+AND month = $2
+AND day = $3`,
+		year,
+		month,
+		day,
+	)
+	if err != nil {
+		return mediaList, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var mfJSON string
+		err := rows.Scan(&mfJSON)
+		if err != nil {
+			return mediaList, err
+		}
+		item := app.Media{}
+		err = json.NewDecoder(strings.NewReader(mfJSON)).Decode(&item)
+		if err != nil {
+			return mediaList, err
+		}
+		mediaList = append(mediaList, item)
+	}
+
+	return mediaList, nil
+}
+
 func (s Selecta) SelectMediaList(limit int, afterKey string) (mf2.MediaList, error) {
 
 	postList := mf2.MediaList{

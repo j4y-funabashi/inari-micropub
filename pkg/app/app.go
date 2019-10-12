@@ -1,6 +1,9 @@
+// Package app orchestrates application level actions
 package app
 
 import (
+	"time"
+
 	"github.com/j4y_funabashi/inari-micropub/pkg/mf2"
 	"github.com/sirupsen/logrus"
 )
@@ -28,10 +31,20 @@ type Day struct {
 	PublishedCount int
 }
 
+type Media struct {
+	URL         string     `json:"url"`
+	MimeType    string     `json:"mime_type"`
+	DateTime    *time.Time `json:"date_time"`
+	Lat         float64    `json:"lat"`
+	Lng         float64    `json:"lng"`
+	IsPublished bool       `json:"is_published"`
+}
+
 type Selecta interface {
 	SelectMediaYearList() []Year
 	SelectMediaMonthList(currentYear string) ([]Month, error)
 	SelectMediaDayList(currentYear, currentMonth string) ([]Day, error)
+	SelectMediaDay(year, month, day string) ([]Media, error)
 	SelectPostList(limit int, afterKey string) mf2.PostList
 }
 
@@ -49,6 +62,7 @@ type ShowMediaResponse struct {
 	CurrentYear  string
 	CurrentMonth string
 	CurrentDay   string
+	Media        []Media
 }
 
 // ShowMedia fetches years and determines current year
@@ -68,6 +82,11 @@ func (s Server) ShowMedia(selectedYear, selectedMonth, selectedDay string) ShowM
 	}
 	currentDay := parseCurrentDay(selectedDay, days)
 
+	media, err := s.selecta.SelectMediaDay(currentYear, currentMonth, currentDay)
+	if err != nil {
+		s.logger.WithError(err).Error("failed to select media day")
+	}
+
 	return ShowMediaResponse{
 		Years:        years,
 		CurrentYear:  currentYear,
@@ -75,6 +94,7 @@ func (s Server) ShowMedia(selectedYear, selectedMonth, selectedDay string) ShowM
 		CurrentMonth: currentMonth,
 		Days:         days,
 		CurrentDay:   currentDay,
+		Media:        media,
 	}
 }
 
