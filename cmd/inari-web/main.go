@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
-	"github.com/j4y_funabashi/inari-micropub/pkg/admin"
 	"github.com/j4y_funabashi/inari-micropub/pkg/app"
 	"github.com/j4y_funabashi/inari-micropub/pkg/db"
 	"github.com/j4y_funabashi/inari-micropub/pkg/eventlog"
@@ -13,6 +12,8 @@ import (
 	"github.com/j4y_funabashi/inari-micropub/pkg/indieauth"
 	"github.com/j4y_funabashi/inari-micropub/pkg/micropub"
 	"github.com/j4y_funabashi/inari-micropub/pkg/s3"
+	"github.com/j4y_funabashi/inari-micropub/pkg/view"
+	"github.com/j4y_funabashi/inari-micropub/pkg/web"
 	"github.com/sirupsen/logrus"
 )
 
@@ -73,14 +74,15 @@ func main() {
 		logger,
 	)
 	frontendServer := frontend.NewServer(inari, logger)
-	adminServer := admin.NewServer(inari, logger)
+	presenter := view.NewPresenter()
+	webServer := web.NewServer(inari, logger, presenter)
 
 	// routing
 	router := mux.NewRouter()
 	router.StrictSlash(true)
 	micropubServer.Routes(router.PathPrefix("/micropub").Subrouter())
 	frontendServer.Routes(router)
-	adminServer.Routes(router)
+	webServer.Routes(router)
 
 	go eventLog.Replay()
 

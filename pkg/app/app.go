@@ -32,12 +32,12 @@ type Day struct {
 }
 
 type Media struct {
-	URL         string     `json:"url"`
-	MimeType    string     `json:"mime_type"`
-	DateTime    *time.Time `json:"date_time"`
-	Lat         float64    `json:"lat"`
-	Lng         float64    `json:"lng"`
-	IsPublished bool       `json:"is_published"`
+	URL         string
+	MimeType    string
+	DateTime    *time.Time
+	Lat         float64
+	Lng         float64
+	IsPublished bool
 }
 
 type Selecta interface {

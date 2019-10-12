@@ -1,0 +1,65 @@
+{{ define "content" }}
+<div class="container">
+  <section class="hero">
+    <div class="hero-body">
+      <div class="container">
+        <h1 class="title">Wed, 3 Jan 2019</h1>
+        <h2 class="subtitle">
+          2/4 published
+        </h2>
+        <progress class="progress is-small" value="2" max="4">2 / 4</progress>
+      </div>
+    </div>
+  </section>
+
+  <!-- row 1 -->
+  <div class="columns is-gapless is-mobile">
+    {{ with .Model.Media }} {{ range . }}
+    <!-- col 2 -->
+    <div class="column is-one-third">
+      <!-- MEDIA -->
+      <div class="card">
+        <div class="card-image">
+          <figure class="image is-square">
+            <img
+              src="https://images.weserv.nl/?w=240&amp;h=240&amp;t=square&amp;a=entropy&amp;url={{ .URL }}"
+            />
+          </figure>
+        </div>
+        <div class="card-content is-overlay has-text-centered">
+          <span class="tag is-success icon">
+            <i class="fas fa-check-square"></i>
+          </span>
+        </div>
+      </div>
+    </div>
+    {{ end }} {{ end }}
+  </div>
+
+  <div class="box">
+    <h4 class="title is-4">Days</h4>
+    <a href="#">Tue 2</a>
+    <progress class="progress is-small" value="1" max="15">1 / 10</progress>
+    <a href="#">Mon 1</a>
+    <progress class="progress is-small" value="15" max="20">1 / 10</progress>
+  </div>
+
+  <div class="box">
+    <h4 class="title is-4">Months</h4>
+    <a href="#">January</a>
+    <progress class="progress is-small" value="16" max="35">1 / 10</progress>
+  </div>
+
+  {{ with .Model.Years }}
+  <div class="box">
+    <h4 class="title is-4">Years</h4>
+    {{ range . }}
+    <a href="#">{{.Name}}</a>
+    <progress class="progress is-small" value="{{ .Value }}" max="{{ .Total }}">
+      {{ .Value }} / {{ .Total }}
+    </progress>
+    {{ end }}
+  </div>
+  {{ end }}
+</div>
+{{ end }}
