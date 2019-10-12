@@ -54,7 +54,7 @@
   <div class="box">
     <h4 class="title is-4">Years</h4>
     {{ range . }}
-    <a href="#">{{.Name}}</a>
+    <a href="{{.URL}}">{{.Name}}</a>
     <progress class="progress is-small" value="{{ .Value }}" max="{{ .Total }}">
       {{ .Value }} / {{ .Total }}
     </progress>
