@@ -3,11 +3,17 @@
   <section class="hero">
     <div class="hero-body">
       <div class="container">
-        <h1 class="title">Wed, 3 Jan 2019</h1>
+        <h1 class="title">{{ .Model.CurrentDay.Name }}</h1>
         <h2 class="subtitle">
-          2/4 published
+          {{ .Model.CurrentDay.Value }} / {{ .Model.CurrentDay.Total }}
+          published
         </h2>
-        <progress class="progress is-small" value="2" max="4">2 / 4</progress>
+        <progress
+          class="progress is-small"
+          value="{{ .Model.CurrentDay.Value }}"
+          max="{{ .Model.CurrentDay.Total }}"
+          >{{.Model.CurrentDay.Value}} / {{.Model.CurrentDay.Total}}</progress
+        >
       </div>
     </div>
   </section>
