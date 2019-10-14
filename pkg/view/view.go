@@ -1,7 +1,12 @@
 // Package view parses app responses into template friendly data structures
 package view
 
-import "github.com/j4y_funabashi/inari-micropub/pkg/app"
+import (
+	"net/url"
+	"time"
+
+	"github.com/j4y_funabashi/inari-micropub/pkg/app"
+)
 
 type Presenter struct{}
 
@@ -17,8 +22,9 @@ type ProgressLink struct {
 }
 
 type MediaGalleryView struct {
-	Media []Media
-	Years []ProgressLink
+	Media  []Media
+	Years  []ProgressLink
+	Months []ProgressLink
 }
 
 func NewPresenter() Presenter {
@@ -26,7 +32,51 @@ func NewPresenter() Presenter {
 }
 
 func (pres Presenter) ParseMediaGallery(mediaRes app.ShowMediaResponse) MediaGalleryView {
+	vm := MediaGalleryView{
+		Media:  parseMedia(mediaRes),
+		Years:  parseYears(mediaRes),
+		Months: parseMonths(mediaRes),
+	}
+	return vm
+}
 
+func parseYears(mediaRes app.ShowMediaResponse) []ProgressLink {
+	years := []ProgressLink{}
+	for _, yr := range mediaRes.Years {
+		urlParams := url.Values{}
+		urlParams.Add("year", yr.Year)
+		y := ProgressLink{
+			Name:  yr.Year,
+			Value: yr.PublishedCount,
+			Total: yr.Count,
+			URL:   "?" + urlParams.Encode(),
+		}
+		years = append(years, y)
+	}
+
+	return years
+}
+
+func parseMonths(mediaRes app.ShowMediaResponse) []ProgressLink {
+	months := []ProgressLink{}
+	for _, item := range mediaRes.Months {
+		now, _ := time.Parse("1", item.Month)
+		urlParams := url.Values{}
+		urlParams.Add("month", item.Month)
+		urlParams.Add("year", mediaRes.CurrentYear.Year)
+		y := ProgressLink{
+			Name:  now.Format("January"),
+			Value: item.PublishedCount,
+			Total: item.Count,
+			URL:   "?" + urlParams.Encode(),
+		}
+		months = append(months, y)
+	}
+
+	return months
+}
+
+func parseMedia(mediaRes app.ShowMediaResponse) []Media {
 	media := []Media{}
 	for _, med := range mediaRes.Media {
 		m := Media{
@@ -35,20 +85,5 @@ func (pres Presenter) ParseMediaGallery(mediaRes app.ShowMediaResponse) MediaGal
 		media = append(media, m)
 	}
 
-	years := []ProgressLink{}
-	for _, yr := range mediaRes.Years {
-		y := ProgressLink{
-			Name:  yr.Year,
-			Value: yr.PublishedCount,
-			Total: yr.Count,
-			URL:   "?year=" + yr.Year,
-		}
-		years = append(years, y)
-	}
-
-	vm := MediaGalleryView{
-		Media: media,
-		Years: years,
-	}
-	return vm
+	return media
 }

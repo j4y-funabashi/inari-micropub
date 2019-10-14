@@ -44,12 +44,20 @@
     <progress class="progress is-small" value="15" max="20">1 / 10</progress>
   </div>
 
+  <!-- months -->
+  {{ with .Model.Months }}
   <div class="box">
     <h4 class="title is-4">Months</h4>
-    <a href="#">January</a>
-    <progress class="progress is-small" value="16" max="35">1 / 10</progress>
+    {{ range . }}
+    <a href="{{.URL}}">{{.Name}}</a>
+    <progress class="progress is-small" value="{{ .Value }}" max="{{ .Total }}">
+      {{ .Value }} / {{ .Total }}
+    </progress>
+    {{ end }}
   </div>
+  {{ end }}
 
+  <!-- years -->
   {{ with .Model.Years }}
   <div class="box">
     <h4 class="title is-4">Years</h4>
