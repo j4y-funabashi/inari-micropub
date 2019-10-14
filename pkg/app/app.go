@@ -60,8 +60,8 @@ type ShowMediaResponse struct {
 	Months       []Month
 	Days         []Day
 	CurrentYear  Year
-	CurrentMonth string
-	CurrentDay   string
+	CurrentMonth Month
+	CurrentDay   Day
 	Media        []Media
 }
 
@@ -76,13 +76,13 @@ func (s Server) ShowMedia(selectedYear, selectedMonth, selectedDay string) ShowM
 	}
 	currentMonth := parseCurrentMonth(selectedMonth, months)
 
-	days, err := s.selecta.SelectMediaDayList(currentYear.Year, currentMonth)
+	days, err := s.selecta.SelectMediaDayList(currentYear.Year, currentMonth.Month)
 	if err != nil {
 		s.logger.WithError(err).Error("failed to select day list")
 	}
 	currentDay := parseCurrentDay(selectedDay, days)
 
-	media, err := s.selecta.SelectMediaDay(currentYear.Year, currentMonth, currentDay)
+	media, err := s.selecta.SelectMediaDay(currentYear.Year, currentMonth.Month, currentDay.Day)
 	if err != nil {
 		s.logger.WithError(err).Error("failed to select media day")
 	}
@@ -98,28 +98,28 @@ func (s Server) ShowMedia(selectedYear, selectedMonth, selectedDay string) ShowM
 	}
 }
 
-func parseCurrentDay(selectedDay string, days []Day) string {
+func parseCurrentDay(selectedDay string, days []Day) Day {
 	for _, day := range days {
 		if day.Day == selectedDay {
-			return selectedDay
+			return day
 		}
 	}
 	if len(days) > 0 {
-		return days[0].Day
+		return days[0]
 	}
-	return ""
+	return Day{}
 }
 
-func parseCurrentMonth(selectedMonth string, months []Month) string {
+func parseCurrentMonth(selectedMonth string, months []Month) Month {
 	for _, month := range months {
 		if month.Month == selectedMonth {
-			return selectedMonth
+			return month
 		}
 	}
 	if len(months) > 0 {
-		return months[0].Month
+		return months[0]
 	}
-	return ""
+	return Month{}
 }
 
 func parseCurrentYear(selectedYear string, years []Year) Year {

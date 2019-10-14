@@ -39,7 +39,6 @@ func (s Server) handleMediaGallery() http.HandlerFunc {
 		day := r.URL.Query().Get("day")
 
 		media := s.App.ShowMedia(year, month, day)
-		s.logger.WithField("media", media).Info("SHOW ME MEDIA!")
 		viewModel := s.presenter.ParseMediaGallery(media)
 		err := renderMediaGallery(viewModel, w)
 		if err != nil {

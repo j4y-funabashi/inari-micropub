@@ -38,13 +38,18 @@
   </div>
   {{ end }} {{ end }}
 
+  <!-- days -->
+  {{ with .Model.Days }}
   <div class="box">
     <h4 class="title is-4">Days</h4>
-    <a href="#">Tue 2</a>
-    <progress class="progress is-small" value="1" max="15">1 / 10</progress>
-    <a href="#">Mon 1</a>
-    <progress class="progress is-small" value="15" max="20">1 / 10</progress>
+    {{ range . }}
+    <a href="{{.URL}}">{{.Name}}</a>
+    <progress class="progress is-small" value="{{ .Value }}" max="{{ .Total }}">
+      {{ .Value }} / {{ .Total }}
+    </progress>
+    {{ end }}
   </div>
+  {{ end }}
 
   <!-- months -->
   {{ with .Model.Months }}

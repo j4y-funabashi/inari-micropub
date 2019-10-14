@@ -25,6 +25,7 @@ type MediaGalleryView struct {
 	Media  [][]Media
 	Years  []ProgressLink
 	Months []ProgressLink
+	Days   []ProgressLink
 }
 
 func NewPresenter() Presenter {
@@ -36,6 +37,7 @@ func (pres Presenter) ParseMediaGallery(mediaRes app.ShowMediaResponse) MediaGal
 		Media:  parseMedia(mediaRes),
 		Years:  parseYears(mediaRes),
 		Months: parseMonths(mediaRes),
+		Days:   parseDays(mediaRes),
 	}
 	return vm
 }
@@ -55,6 +57,26 @@ func parseYears(mediaRes app.ShowMediaResponse) []ProgressLink {
 	}
 
 	return years
+}
+
+func parseDays(mediaRes app.ShowMediaResponse) []ProgressLink {
+	days := []ProgressLink{}
+	for _, item := range mediaRes.Days {
+		now, _ := time.Parse("2006-1-2", mediaRes.CurrentYear.Year+"-"+mediaRes.CurrentMonth.Month+"-"+item.Day)
+		urlParams := url.Values{}
+		urlParams.Add("month", mediaRes.CurrentMonth.Month)
+		urlParams.Add("year", mediaRes.CurrentYear.Year)
+		urlParams.Add("day", item.Day)
+		y := ProgressLink{
+			Name:  now.Format("Mon 2"),
+			Value: item.PublishedCount,
+			Total: item.Count,
+			URL:   "?" + urlParams.Encode(),
+		}
+		days = append(days, y)
+	}
+
+	return days
 }
 
 func parseMonths(mediaRes app.ShowMediaResponse) []ProgressLink {
