@@ -33,11 +33,14 @@
             />
           </figure>
         </div>
+
+        {{ if .IsPublished }}
         <div class="card-content is-overlay has-text-centered">
           <span class="tag is-success icon">
             <i class="fas fa-check-square"></i>
           </span>
         </div>
+        {{ end }}
       </div>
     </div>
     {{ end }}

@@ -11,7 +11,8 @@ import (
 type Presenter struct{}
 
 type Media struct {
-	URL string
+	URL         string
+	IsPublished bool
 }
 
 type ProgressLink struct {
@@ -121,7 +122,8 @@ func parseMedia(mediaRes app.ShowMediaResponse) [][]Media {
 	column := []Media{}
 	for _, m := range mediaRes.Media {
 		md := Media{
-			URL: m.URL,
+			URL:         m.URL,
+			IsPublished: m.IsPublished,
 		}
 		column = append(column, md)
 		if i%columnCount == 0 {

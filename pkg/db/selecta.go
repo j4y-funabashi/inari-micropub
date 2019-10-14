@@ -285,7 +285,7 @@ func (s Selecta) SelectMediaDay(year, month, day string) ([]app.Media, error) {
 
 	rows, err := s.db.Query(
 		`SELECT
-media.data
+media.data, COALESCE(media_published.id, '0')
 FROM media
 LEFT JOIN media_published ON media.id = media_published.id
 WHERE year = $1
@@ -302,7 +302,8 @@ AND day = $3`,
 
 	for rows.Next() {
 		var mfJSON string
-		err := rows.Scan(&mfJSON)
+		var isPublished string
+		err := rows.Scan(&mfJSON, &isPublished)
 		if err != nil {
 			return mediaList, err
 		}
@@ -310,6 +311,9 @@ AND day = $3`,
 		err = json.NewDecoder(strings.NewReader(mfJSON)).Decode(&item)
 		if err != nil {
 			return mediaList, err
+		}
+		if isPublished != "0" {
+			item.IsPublished = true
 		}
 		mediaList = append(mediaList, item)
 	}
