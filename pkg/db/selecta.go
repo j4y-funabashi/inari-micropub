@@ -290,7 +290,8 @@ FROM media
 LEFT JOIN media_published ON media.id = media_published.id
 WHERE year = $1
 AND month = $2
-AND day = $3`,
+AND day = $3
+ORDER BY media.sort_key DESC`,
 		year,
 		month,
 		day,
