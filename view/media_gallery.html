@@ -18,22 +18,26 @@
     </div>
   </section>
 
-  <!-- row 1 -->
   {{ with .Model.Media }} {{ range . }}
   <div class="columns is-gapless is-mobile">
-    <!-- col 2 -->
     {{ range . }}
     <div class="column is-one-third">
-      <!-- MEDIA -->
       <div class="card">
         <div class="card-image">
           <figure class="image is-square">
+            {{ if .IsPublished }}
             <img
               src="https://images.weserv.nl/?w=240&amp;h=240&amp;t=square&amp;a=entropy&amp;url={{ .URL }}"
             />
+            {{ else }}
+            <a href="/admin/media/detail?url={{ .URL }}">
+              <img
+                src="https://images.weserv.nl/?w=240&amp;h=240&amp;t=square&amp;a=entropy&amp;url={{ .URL }}"
+              />
+            </a>
+            {{ end }}
           </figure>
         </div>
-
         {{ if .IsPublished }}
         <div class="card-content is-overlay has-text-centered">
           <span class="tag is-success icon">
