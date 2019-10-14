@@ -22,7 +22,7 @@ type ProgressLink struct {
 }
 
 type MediaGalleryView struct {
-	Media  []Media
+	Media  [][]Media
 	Years  []ProgressLink
 	Months []ProgressLink
 }
@@ -76,14 +76,27 @@ func parseMonths(mediaRes app.ShowMediaResponse) []ProgressLink {
 	return months
 }
 
-func parseMedia(mediaRes app.ShowMediaResponse) []Media {
-	media := []Media{}
-	for _, med := range mediaRes.Media {
-		m := Media{
-			URL: med.URL,
+func parseMedia(mediaRes app.ShowMediaResponse) [][]Media {
+
+	columnCount := 3
+	out := [][]Media{}
+
+	i := 1
+	column := []Media{}
+	for _, m := range mediaRes.Media {
+		md := Media{
+			URL: m.URL,
 		}
-		media = append(media, m)
+		column = append(column, md)
+		if i%columnCount == 0 {
+			out = append(out, column)
+			column = []Media{}
+		}
+		i++
+	}
+	if len(column) > 0 {
+		out = append(out, column)
 	}
 
-	return media
+	return out
 }
