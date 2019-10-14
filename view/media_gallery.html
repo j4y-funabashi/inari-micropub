@@ -13,9 +13,10 @@
   </section>
 
   <!-- row 1 -->
+  {{ with .Model.Media }} {{ range . }}
   <div class="columns is-gapless is-mobile">
-    {{ with .Model.Media }} {{ range . }}
     <!-- col 2 -->
+    {{ range . }}
     <div class="column is-one-third">
       <!-- MEDIA -->
       <div class="card">
@@ -33,8 +34,9 @@
         </div>
       </div>
     </div>
-    {{ end }} {{ end }}
+    {{ end }}
   </div>
+  {{ end }} {{ end }}
 
   <div class="box">
     <h4 class="title is-4">Days</h4>
