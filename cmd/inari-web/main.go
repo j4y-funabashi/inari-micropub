@@ -12,6 +12,7 @@ import (
 	"github.com/j4y_funabashi/inari-micropub/pkg/indieauth"
 	"github.com/j4y_funabashi/inari-micropub/pkg/micropub"
 	"github.com/j4y_funabashi/inari-micropub/pkg/s3"
+	"github.com/j4y_funabashi/inari-micropub/pkg/session"
 	"github.com/j4y_funabashi/inari-micropub/pkg/view"
 	"github.com/j4y_funabashi/inari-micropub/pkg/web"
 	"github.com/sirupsen/logrus"
@@ -68,10 +69,12 @@ func main() {
 		eventLog,
 		mediaServer,
 	)
+	sessStore := session.NewSessionStore(sqlDB)
 
 	inari := app.New(
 		selecta,
 		logger,
+		sessStore,
 	)
 	frontendServer := frontend.NewServer(inari, logger)
 	presenter := view.NewPresenter()

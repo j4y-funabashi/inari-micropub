@@ -1,0 +1,14 @@
+{{ define "content" }}
+<div class="container">
+  <div class="card">
+    <div class="card-image">
+      <img src="https://images.weserv.nl/?w=840&url={{ .Model.Media.URL }}" />
+    </div>
+
+    <form method="post" action="/admin/composer/media">
+      <input type="hidden" name="media_url" value="{{ .Model.Media.URL }}" />
+      <button class="button is-link">Add to post</button>
+    </form>
+  </div>
+</div>
+{{ end }}

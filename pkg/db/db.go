@@ -35,6 +35,10 @@ CREATE TABLE IF NOT EXISTS "media_published" (
 	"id" TEXT PRIMARY KEY
 );
 
+CREATE TABLE IF NOT EXISTS "sessions" (
+	"id" TEXT PRIMARY KEY,
+	"data" TEXT NOT NULL
+);
 `
 }
 

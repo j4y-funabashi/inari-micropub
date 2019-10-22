@@ -1,0 +1,52 @@
+{{ define "content" }}
+
+<div class="container">
+  <h1 class="title">{{ .PageTitle }}</h1>
+
+  <form
+    method="post"
+    action="/submit"
+    enctype="application/x-www-form-urlencoded"
+  >
+    <textarea
+      name="content"
+      placeholder="Add a caption"
+      class="textarea"
+      autofocus
+    ></textarea>
+    <input type="hidden" name="h" value="entry" />
+
+    <div class="field">
+      <div class="control">
+        <ul>
+          <li>
+            <a href="/admin/composer/addpublished" class="button is-fullwidth">
+              Published
+            </a>
+          </li>
+
+          <li>
+            <a href="/admin/composer/media" class="button is-fullwidth"
+              >Add a photo</a
+            >
+          </li>
+          <li>
+            <a href="/admin/composer/addlocation" class="button is-fullwidth">
+              Add Location
+            </a>
+          </li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="control">
+        <button type="submit" class="button is-primary is-fullwidth">
+          Post
+        </button>
+      </div>
+    </div>
+  </form>
+</div>
+
+{{ end }}

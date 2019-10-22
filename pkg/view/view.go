@@ -30,13 +30,23 @@ type MediaGalleryView struct {
 	CurrentDay ProgressLink
 }
 
+type MediaDetailView struct {
+	Media Media
+}
+
 func NewPresenter() Presenter {
 	return Presenter{}
 }
 
+func (pres Presenter) ParseMediaDetail(mediaRes app.ShowMediaDetailResponse) MediaDetailView {
+	return MediaDetailView{
+		Media: parseMedia(mediaRes.Media),
+	}
+}
+
 func (pres Presenter) ParseMediaGallery(mediaRes app.ShowMediaResponse) MediaGalleryView {
 	vm := MediaGalleryView{
-		Media:      parseMedia(mediaRes),
+		Media:      parseMediaColumns(mediaRes),
 		Years:      parseYears(mediaRes),
 		Months:     parseMonths(mediaRes),
 		Days:       parseDays(mediaRes),
@@ -113,7 +123,15 @@ func parseMonths(mediaRes app.ShowMediaResponse) []ProgressLink {
 	return months
 }
 
-func parseMedia(mediaRes app.ShowMediaResponse) [][]Media {
+func parseMedia(m app.Media) Media {
+	md := Media{
+		URL:         m.URL,
+		IsPublished: m.IsPublished,
+	}
+	return md
+}
+
+func parseMediaColumns(mediaRes app.ShowMediaResponse) [][]Media {
 
 	columnCount := 3
 	out := [][]Media{}
@@ -121,10 +139,7 @@ func parseMedia(mediaRes app.ShowMediaResponse) [][]Media {
 	i := 1
 	column := []Media{}
 	for _, m := range mediaRes.Media {
-		md := Media{
-			URL:         m.URL,
-			IsPublished: m.IsPublished,
-		}
+		md := parseMedia(m)
 		column = append(column, md)
 		if i%columnCount == 0 {
 			out = append(out, column)

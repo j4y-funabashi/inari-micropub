@@ -2,6 +2,11 @@
 package app
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
+	"errors"
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/j4y_funabashi/inari-micropub/pkg/mf2"
@@ -9,8 +14,9 @@ import (
 )
 
 type Server struct {
-	selecta Selecta
-	logger  *logrus.Logger
+	selecta      Selecta
+	logger       *logrus.Logger
+	sessionStore SessionStore
 }
 
 type Year struct {
@@ -32,12 +38,12 @@ type Day struct {
 }
 
 type Media struct {
-	URL         string
-	MimeType    string
-	DateTime    *time.Time
-	Lat         float64
-	Lng         float64
-	IsPublished bool
+	URL         string     `json:"url"`
+	MimeType    string     `json:"mime_type"`
+	DateTime    *time.Time `json:"date_time"`
+	Lat         float64    `json:"lat"`
+	Lng         float64    `json:"lng"`
+	IsPublished bool       `json:"is_published"`
 }
 
 type Selecta interface {
@@ -45,13 +51,19 @@ type Selecta interface {
 	SelectMediaMonthList(currentYear string) ([]Month, error)
 	SelectMediaDayList(currentYear, currentMonth string) ([]Day, error)
 	SelectMediaDay(year, month, day string) ([]Media, error)
+	SelectMediaByURL(url string) (Media, error)
 	SelectPostList(limit int, afterKey string) mf2.PostList
 }
 
-func New(selecta Selecta, logger *logrus.Logger) Server {
+type SessionStore interface {
+	Create() (SessionData, error)
+}
+
+func New(selecta Selecta, logger *logrus.Logger, ss SessionStore) Server {
 	return Server{
-		selecta: selecta,
-		logger:  logger,
+		selecta:      selecta,
+		logger:       logger,
+		sessionStore: ss,
 	}
 }
 
@@ -65,8 +77,61 @@ type ShowMediaResponse struct {
 	Media        []Media
 }
 
-// ShowMedia fetches years and determines current year
-func (s Server) ShowMedia(selectedYear, selectedMonth, selectedDay string) ShowMediaResponse {
+type ShowMediaDetailResponse struct {
+	Media Media
+}
+
+type SessionData struct {
+	Token string `json:"token"`
+}
+
+func (s SessionData) CookieValue() string {
+	return fmt.Sprintf("session_id=%s; Path=/", s.Token)
+}
+
+type AuthResponse struct {
+	Session SessionData
+}
+
+func (s Server) Auth(password string) (AuthResponse, error) {
+	res := AuthResponse{}
+
+	// compare hashes
+	h := sha1.New()
+	h.Write([]byte(password))
+	actualPass := os.Getenv("ADMIN_PASSWORD")
+	hashedPass := hex.EncodeToString(h.Sum(nil))
+	if actualPass != hashedPass {
+		return res, errors.New("incorrect password")
+	}
+
+	// create session
+	session, err := s.sessionStore.Create()
+	if err != nil {
+		s.logger.WithError(err).Error("failed to create session")
+		return res, err
+	}
+	res.Session = session
+
+	return res, nil
+}
+
+func (s Server) ShowMediaDetail(mediaURL string) ShowMediaDetailResponse {
+	out := ShowMediaDetailResponse{}
+
+	media, err := s.selecta.SelectMediaByURL(mediaURL)
+	if err != nil {
+		s.logger.WithError(err).Error("failed to fetch media")
+		return out
+	}
+
+	out.Media = media
+
+	return out
+}
+
+// ShowMediaGallery fetches years and determines current year
+func (s Server) ShowMediaGallery(selectedYear, selectedMonth, selectedDay string) ShowMediaResponse {
 	years := s.selecta.SelectMediaYearList()
 	currentYear := parseCurrentYear(selectedYear, years)
 

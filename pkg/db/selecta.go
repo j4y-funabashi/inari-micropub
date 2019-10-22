@@ -248,32 +248,30 @@ func (s Selecta) SelectPostByURL(uid string) (mf2.MicroFormat, error) {
 	return mf, nil
 }
 
-func (s Selecta) SelectMediaByURL(uid string) (mf2.MediaMetadata, error) {
+func (s Selecta) SelectMediaByURL(uid string) (app.Media, error) {
 
+	media := app.Media{}
 	rows, err := s.db.Query(
 		`SELECT data FROM media WHERE id = $1`,
 		uid,
 	)
 	if err != nil {
-		return mf2.MediaMetadata{}, err
+		return media, err
 	}
-
 	defer rows.Close()
 
 	var mfJSON string
-	mf := mf2.MediaMetadata{}
-
 	for rows.Next() {
 		err := rows.Scan(&mfJSON)
 		if err != nil {
-			return mf2.MediaMetadata{}, err
+			return media, err
 		}
-		err = json.NewDecoder(strings.NewReader(mfJSON)).Decode(&mf)
+		err = json.NewDecoder(strings.NewReader(mfJSON)).Decode(&media)
 		if err != nil {
-			return mf2.MediaMetadata{}, err
+			return media, err
 		}
 	}
-	return mf, nil
+	return media, nil
 }
 
 func (s Selecta) SelectMediaMonth(year, month string) (mf2.MediaList, error) {
