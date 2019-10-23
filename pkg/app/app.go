@@ -57,6 +57,8 @@ type Selecta interface {
 
 type SessionStore interface {
 	Create() (SessionData, error)
+	Fetch(sessionID string) (SessionData, error)
+	Save(sess SessionData) error
 }
 
 func New(selecta Selecta, logger *logrus.Logger, ss SessionStore) Server {
@@ -82,15 +84,25 @@ type ShowMediaDetailResponse struct {
 }
 
 type SessionData struct {
-	Token string `json:"token"`
+	Token string  `json:"token"`
+	Media []Media `json:"media"`
 }
 
-func (s SessionData) CookieValue() string {
-	return fmt.Sprintf("session_id=%s; Path=/", s.Token)
+func (s SessionData) CookieValue(maxAge int) string {
+	return fmt.Sprintf("session_id=%s; Path=/; Max-Age=%d", s.Token, maxAge)
 }
 
 type AuthResponse struct {
 	Session SessionData
+}
+
+func (s Server) FetchSession(sessionID string) (SessionData, error) {
+	sess, err := s.sessionStore.Fetch(sessionID)
+	return sess, err
+}
+
+func (s Server) SaveSession(sess SessionData) error {
+	return s.sessionStore.Save(sess)
 }
 
 func (s Server) Auth(password string) (AuthResponse, error) {

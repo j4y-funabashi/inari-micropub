@@ -3,6 +3,12 @@
 <div class="container">
   <h1 class="title">{{ .PageTitle }}</h1>
 
+  {{ range .Model.Media }}
+  <img
+    src="https://images.weserv.nl/?w=240&amp;h=240&amp;t=square&amp;a=entropy&amp;url={{ .URL }}"
+  />
+  {{ end }}
+
   <form
     method="post"
     action="/submit"

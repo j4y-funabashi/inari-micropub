@@ -34,8 +34,20 @@ type MediaDetailView struct {
 	Media Media
 }
 
+type ComposerView struct {
+	Media []Media
+}
+
 func NewPresenter() Presenter {
 	return Presenter{}
+}
+
+func (pres Presenter) ParseComposer(media []app.Media) ComposerView {
+	out := ComposerView{}
+	for _, m := range media {
+		out.Media = append(out.Media, parseMedia(m))
+	}
+	return out
 }
 
 func (pres Presenter) ParseMediaDetail(mediaRes app.ShowMediaDetailResponse) MediaDetailView {

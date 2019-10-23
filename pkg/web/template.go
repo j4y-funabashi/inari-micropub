@@ -35,7 +35,7 @@ func renderMediaDetail(media view.MediaDetailView, w http.ResponseWriter) error 
 	return err
 }
 
-func renderComposerForm(w http.ResponseWriter) error {
+func renderComposerForm(viewModel view.ComposerView, w http.ResponseWriter) error {
 	outBuf := new(bytes.Buffer)
 	t, err := template.ParseFiles(
 		"view/layout.html",
@@ -46,8 +46,10 @@ func renderComposerForm(w http.ResponseWriter) error {
 	}
 	v := struct {
 		PageTitle string
+		Model     view.ComposerView
 	}{
 		PageTitle: "Add a Post",
+		Model:     viewModel,
 	}
 	err = t.ExecuteTemplate(outBuf, "layout", v)
 	if err != nil {

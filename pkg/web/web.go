@@ -2,6 +2,7 @@
 package web
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -15,6 +16,10 @@ type Server struct {
 	logger    *logrus.Logger
 	presenter view.Presenter
 }
+
+type contextKey string
+
+var contextKeySessionID = contextKey("session-id")
 
 func NewServer(
 	a app.Server,
@@ -33,6 +38,7 @@ func (s Server) Routes(router *mux.Router) {
 	router.HandleFunc("/login", s.handleLogin()).Methods("POST")
 	router.HandleFunc("/admin/composer", s.adminOnly(s.handleComposerForm())).Methods("GET")
 	router.HandleFunc("/admin/composer/media", s.adminOnly(s.handleMediaGallery())).Methods("GET")
+	router.HandleFunc("/admin/composer/media", s.adminOnly(s.handleAddMediaToComposer())).Methods("POST")
 	router.HandleFunc("/admin/composer/media/detail", s.adminOnly(s.handleMediaDetail())).Methods("GET")
 }
 
@@ -50,7 +56,12 @@ func (s Server) handleMediaDetail() http.HandlerFunc {
 
 func (s Server) handleComposerForm() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		err := renderComposerForm(w)
+		sess, ok := r.Context().Value(contextKeySessionID).(app.SessionData)
+		if !ok {
+			s.logger.Error("failed fetch session from context")
+		}
+		viewModel := s.presenter.ParseComposer(sess.Media)
+		err := renderComposerForm(viewModel, w)
 		if err != nil {
 			s.logger.WithError(err).Error("failed to render composer")
 		}
@@ -69,7 +80,7 @@ func (s Server) handleLogin() http.HandlerFunc {
 		}
 
 		w.Header().Set("Location", "/admin/composer")
-		w.Header().Set("Set-Cookie", authResponse.Session.CookieValue())
+		w.Header().Set("Set-Cookie", authResponse.Session.CookieValue(1209600))
 		w.WriteHeader(http.StatusSeeOther)
 		return
 	}
@@ -92,8 +103,40 @@ func (s Server) adminOnly(h http.HandlerFunc) http.HandlerFunc {
 			w.WriteHeader(http.StatusSeeOther)
 			return
 		}
-		s.logger.WithField("session_id", cookie.Value)
-		h(w, r)
+		sess, err := s.App.FetchSession(cookie.Value)
+
+		if err != nil || sess.Token != cookie.Value {
+			w.Header().Set("Location", "/login")
+			w.Header().Set("Set-Cookie", sess.CookieValue(0))
+			w.WriteHeader(http.StatusSeeOther)
+			return
+		}
+		s.logger.
+			WithField("session_id", cookie.Value).
+			WithField("existing_session", sess).
+			Info("found session")
+
+		ctx := context.WithValue(r.Context(), contextKeySessionID, sess)
+		h(w, r.WithContext(ctx))
+	}
+}
+
+func (s Server) handleAddMediaToComposer() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		mediaURL := r.FormValue("media_url")
+		media := s.App.ShowMediaDetail(mediaURL)
+		sess, ok := r.Context().Value(contextKeySessionID).(app.SessionData)
+		if !ok {
+			s.logger.Error("failed fetch session from context")
+		}
+		sess.Media = append(sess.Media, media.Media)
+		s.logger.WithField("sess", sess).Info("session")
+		err := s.App.SaveSession(sess)
+		if err != nil {
+			s.logger.WithError(err).Error("failed save session")
+		}
+		w.Header().Set("Location", "/admin/composer")
+		w.WriteHeader(http.StatusSeeOther)
 	}
 }
 
