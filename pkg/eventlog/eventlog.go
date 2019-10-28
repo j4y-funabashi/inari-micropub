@@ -173,7 +173,7 @@ func (e PostCreatedEvent) reduce(sqlClient *sql.Tx) error {
 		return nil
 	}
 
-	published, err := time.Parse(time.RFC3339Nano, e.EventData.GetFirstString("published"))
+	published, err := time.Parse(time.RFC3339, e.EventData.ToView().Published)
 	if err != nil {
 		return err
 	}
@@ -192,12 +192,18 @@ func (e PostCreatedEvent) reduce(sqlClient *sql.Tx) error {
 		buf.String(),
 		published.Format(time.RFC3339)+e.EventData.GetFirstString("uid"),
 	)
+	if err != nil {
+		return err
+	}
 
 	for _, photoURL := range e.EventData.GetStringSlice("photo") {
 		_, err = sqlClient.Exec(
 			`INSERT INTO media_published (id) VALUES ($1) ON CONFLICT DO NOTHING`,
 			photoURL,
 		)
+		if err != nil {
+			return err
+		}
 	}
 
 	return err
@@ -330,10 +336,15 @@ func (el EventLog) Append(event Event) error {
 
 	err = event.save(tx, el.s3Client, el.s3KeyPrefix, el.s3Bucket)
 	if err != nil {
+		el.logger.WithError(err).Error("failed to save event")
 		return err
 	}
 
 	err = event.reduce(tx)
+	if err != nil {
+		el.logger.WithError(err).Error("failed to reduce event")
+		return err
+	}
 
 	err = tx.Commit()
 	if err != nil {

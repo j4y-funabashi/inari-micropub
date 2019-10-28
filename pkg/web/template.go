@@ -62,6 +62,32 @@ func renderComposerForm(viewModel view.ComposerView, w http.ResponseWriter) erro
 	return err
 }
 
+func renderLocationSearch(viewModel view.LocationSearchView, w http.ResponseWriter) error {
+	outBuf := new(bytes.Buffer)
+	t, err := template.ParseFiles(
+		"view/layout.html",
+		"view/location-search.html",
+	)
+	if err != nil {
+		return err
+	}
+	v := struct {
+		PageTitle string
+		Model     view.LocationSearchView
+	}{
+		PageTitle: "Search location",
+		Model:     viewModel,
+	}
+	err = t.ExecuteTemplate(outBuf, "layout", v)
+	if err != nil {
+		return err
+	}
+	w.Header().Set("Content-type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	_, err = w.Write(outBuf.Bytes())
+	return err
+}
+
 func renderLoginForm(w http.ResponseWriter) error {
 	outBuf := new(bytes.Buffer)
 	t, err := template.ParseFiles(

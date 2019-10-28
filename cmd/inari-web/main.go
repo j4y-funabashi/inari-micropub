@@ -9,6 +9,7 @@ import (
 	"github.com/j4y_funabashi/inari-micropub/pkg/db"
 	"github.com/j4y_funabashi/inari-micropub/pkg/eventlog"
 	"github.com/j4y_funabashi/inari-micropub/pkg/frontend"
+	"github.com/j4y_funabashi/inari-micropub/pkg/geocoder"
 	"github.com/j4y_funabashi/inari-micropub/pkg/indieauth"
 	"github.com/j4y_funabashi/inari-micropub/pkg/micropub"
 	"github.com/j4y_funabashi/inari-micropub/pkg/s3"
@@ -28,6 +29,8 @@ func main() {
 	S3KeyPrefix := os.Getenv("S3_EVENTS_KEY")
 	S3Bucket := os.Getenv("S3_EVENTS_BUCKET")
 	mediaBucket := os.Getenv("S3_MEDIA_BUCKET")
+	geoAPIKey := os.Getenv("GEO_API_KEY")
+	geoBaseURL := os.Getenv("GEO_API_URL")
 
 	// deps
 	logger := logrus.New()
@@ -71,10 +74,14 @@ func main() {
 	)
 	sessStore := session.NewSessionStore(sqlDB)
 
+	geo := geocoder.New(geoAPIKey, geoBaseURL, logger)
+
 	inari := app.New(
 		selecta,
 		logger,
 		sessStore,
+		geo,
+		eventLog,
 	)
 	frontendServer := frontend.NewServer(inari, logger)
 	presenter := view.NewPresenter()

@@ -5,6 +5,10 @@
       <img src="https://images.weserv.nl/?w=840&url={{ .Model.Media.URL }}" />
     </div>
 
+    <div class="card-content">
+      {{ .Model.Media.DateTime }}
+    </div>
+
     <form method="post" action="/admin/composer/media">
       <input type="hidden" name="media_url" value="{{ .Model.Media.URL }}" />
       <button class="button is-link">Add to post</button>

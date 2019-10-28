@@ -7,9 +7,12 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
+	"github.com/j4y_funabashi/inari-micropub/pkg/eventlog"
 	"github.com/j4y_funabashi/inari-micropub/pkg/mf2"
+	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -17,6 +20,13 @@ type Server struct {
 	selecta      Selecta
 	logger       *logrus.Logger
 	sessionStore SessionStore
+	geo          Geocoder
+	el           EventLog
+}
+
+type Geocoder interface {
+	Lookup(address string) []Location
+	LookupLatLng(lat, lng float64) []Location
 }
 
 type Year struct {
@@ -46,6 +56,25 @@ type Media struct {
 	IsPublished bool       `json:"is_published"`
 }
 
+type Location struct {
+	Lat      float64 `json:"lat"`
+	Lng      float64 `json:"lng"`
+	Locality string  `json:"locality"`
+	Region   string  `json:"region"`
+	Country  string  `json:"country"`
+}
+
+func (l Location) isValid() bool {
+	if l.Lat == 0 && l.Lng == 0 {
+		return false
+	}
+	return true
+}
+
+func (l Location) toGeoURL() string {
+	return fmt.Sprintf("geo:%g,%g", l.Lat, l.Lng)
+}
+
 type Selecta interface {
 	SelectMediaYearList() []Year
 	SelectMediaMonthList(currentYear string) ([]Month, error)
@@ -61,11 +90,23 @@ type SessionStore interface {
 	Save(sess SessionData) error
 }
 
-func New(selecta Selecta, logger *logrus.Logger, ss SessionStore) Server {
+type EventLog interface {
+	Append(event eventlog.Event) error
+}
+
+func New(
+	selecta Selecta,
+	logger *logrus.Logger,
+	ss SessionStore,
+	geo Geocoder,
+	el EventLog,
+) Server {
 	return Server{
 		selecta:      selecta,
 		logger:       logger,
 		sessionStore: ss,
+		geo:          geo,
+		el:           el,
 	}
 }
 
@@ -80,20 +121,75 @@ type ShowMediaResponse struct {
 }
 
 type ShowMediaDetailResponse struct {
-	Media Media
+	Media     Media
+	Locations []Location
 }
 
 type SessionData struct {
-	Token string  `json:"token"`
-	Media []Media `json:"media"`
+	Token     string     `json:"token"`
+	Media     []Media    `json:"media"`
+	Location  Location   `json:"location"`
+	Published *time.Time `json:"published"`
+	Content   string     `json:"content"`
+}
+
+func (s SessionData) Reset() SessionData {
+	return SessionData{
+		Token: s.Token,
+	}
 }
 
 func (s SessionData) CookieValue(maxAge int) string {
 	return fmt.Sprintf("session_id=%s; Path=/; Max-Age=%d", s.Token, maxAge)
 }
 
+func (s SessionData) ToMf2() mf2.MicroFormat {
+	uid := uuid.NewV4()
+	mfType := []string{"h-entry"}
+
+	props := make(map[string][]interface{})
+	props["uid"] = append(props["uid"], uid.String())
+
+	// media
+	for _, m := range s.Media {
+		props["photo"] = append(props["photo"], m.URL)
+	}
+
+	// location
+	if s.Location.isValid() {
+		props["location"] = append(props["location"], s.Location.toGeoURL())
+	}
+
+	// published
+	if s.Published != nil {
+		props["published"] = append(props["published"], s.Published)
+	}
+
+	// content
+	if s.Content != "" {
+		props["content"] = append(props["content"], s.Content)
+	}
+
+	baseURL := os.Getenv("SITE_URL")
+	postURL := strings.TrimRight(baseURL, "/") + "/p/" + uid.String()
+
+	mf := mf2.MicroFormat{
+		Type:       mfType,
+		Properties: props,
+	}
+	mf.SetDefaults(baseURL, uid.String(), postURL)
+
+	return mf
+}
+
 type AuthResponse struct {
 	Session SessionData
+}
+
+func (s Server) CreatePost(sess SessionData) error {
+	mf := sess.ToMf2()
+	event := eventlog.NewPostCreated(mf)
+	return s.el.Append(event)
 }
 
 func (s Server) FetchSession(sessionID string) (SessionData, error) {
@@ -128,6 +224,14 @@ func (s Server) Auth(password string) (AuthResponse, error) {
 	return res, nil
 }
 
+func (s Server) SearchLocations(query string) []Location {
+	if query == "" {
+		return []Location{}
+	}
+	locations := s.geo.Lookup(query)
+	return locations
+}
+
 func (s Server) ShowMediaDetail(mediaURL string) ShowMediaDetailResponse {
 	out := ShowMediaDetailResponse{}
 
@@ -137,7 +241,10 @@ func (s Server) ShowMediaDetail(mediaURL string) ShowMediaDetailResponse {
 		return out
 	}
 
+	locations := s.geo.LookupLatLng(media.Lat, media.Lng)
+
 	out.Media = media
+	out.Locations = locations
 
 	return out
 }

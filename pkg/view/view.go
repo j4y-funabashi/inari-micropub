@@ -3,15 +3,35 @@ package view
 
 import (
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/j4y_funabashi/inari-micropub/pkg/app"
 )
 
+var humanDateLayout = "Mon Jan 02, 2006"
+
 type Presenter struct{}
+
+type Location struct {
+	Location string  `json:"location"`
+	Lat      float64 `json:"lat"`
+	Lng      float64 `json:"lng"`
+	Locality string  `json:"locality"`
+	Region   string  `json:"region"`
+	Country  string  `json:"country"`
+}
+
+type LocationSearchView struct {
+	Query     string
+	Locations []Location
+}
 
 type Media struct {
 	URL         string
+	Lat         float64
+	Lng         float64
+	DateTime    string
 	IsPublished bool
 }
 
@@ -34,18 +54,58 @@ type MediaDetailView struct {
 	Media Media
 }
 
-type ComposerView struct {
-	Media []Media
-}
-
 func NewPresenter() Presenter {
 	return Presenter{}
 }
 
-func (pres Presenter) ParseComposer(media []app.Media) ComposerView {
+func (pres Presenter) ParseLocationSearch(query string, locations []app.Location) LocationSearchView {
+	out := LocationSearchView{
+		Query: query,
+	}
+	for _, m := range locations {
+		out.Locations = append(out.Locations, parseLocation(m))
+	}
+	return out
+}
+
+func parseLocation(m app.Location) Location {
+	loc := []string{}
+	if m.Locality != "" {
+		loc = append(loc, m.Locality)
+	}
+	if m.Region != "" {
+		loc = append(loc, m.Region)
+	}
+	if m.Country != "" {
+		loc = append(loc, m.Country)
+	}
+	md := Location{
+		Lat:      m.Lat,
+		Lng:      m.Lng,
+		Locality: m.Locality,
+		Location: strings.Join(loc[:], ", "),
+		Region:   m.Region,
+		Country:  m.Country,
+	}
+	return md
+}
+
+type ComposerView struct {
+	Media     []Media
+	Location  Location
+	Published string
+	HumanDate string
+}
+
+func (pres Presenter) ParseComposer(sess app.SessionData) ComposerView {
 	out := ComposerView{}
-	for _, m := range media {
+	for _, m := range sess.Media {
 		out.Media = append(out.Media, parseMedia(m))
+	}
+	out.Location = parseLocation(sess.Location)
+	if sess.Published != nil {
+		out.Published = sess.Published.Format(time.RFC3339)
+		out.HumanDate = sess.Published.Format(humanDateLayout)
 	}
 	return out
 }
@@ -138,6 +198,9 @@ func parseMonths(mediaRes app.ShowMediaResponse) []ProgressLink {
 func parseMedia(m app.Media) Media {
 	md := Media{
 		URL:         m.URL,
+		Lat:         m.Lat,
+		Lng:         m.Lng,
+		DateTime:    m.DateTime.Format(humanDateLayout),
 		IsPublished: m.IsPublished,
 	}
 	return md

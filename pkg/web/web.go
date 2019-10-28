@@ -4,6 +4,7 @@ package web
 import (
 	"context"
 	"net/http"
+	"strconv"
 
 	"github.com/gorilla/mux"
 	"github.com/j4y_funabashi/inari-micropub/pkg/app"
@@ -37,9 +38,12 @@ func (s Server) Routes(router *mux.Router) {
 	router.HandleFunc("/login", s.handleLoginForm()).Methods("GET")
 	router.HandleFunc("/login", s.handleLogin()).Methods("POST")
 	router.HandleFunc("/admin/composer", s.adminOnly(s.handleComposerForm())).Methods("GET")
+	router.HandleFunc("/admin/composer", s.adminOnly(s.handleComposerSubmit())).Methods("POST")
 	router.HandleFunc("/admin/composer/media", s.adminOnly(s.handleMediaGallery())).Methods("GET")
 	router.HandleFunc("/admin/composer/media", s.adminOnly(s.handleAddMediaToComposer())).Methods("POST")
 	router.HandleFunc("/admin/composer/media/detail", s.adminOnly(s.handleMediaDetail())).Methods("GET")
+	router.HandleFunc("/admin/composer/location", s.adminOnly(s.handleLocationSearch())).Methods("GET")
+	router.HandleFunc("/admin/composer/location", s.adminOnly(s.handleAddLocationToComposer())).Methods("POST")
 }
 
 func (s Server) handleMediaDetail() http.HandlerFunc {
@@ -60,7 +64,7 @@ func (s Server) handleComposerForm() http.HandlerFunc {
 		if !ok {
 			s.logger.Error("failed fetch session from context")
 		}
-		viewModel := s.presenter.ParseComposer(sess.Media)
+		viewModel := s.presenter.ParseComposer(sess)
 		err := renderComposerForm(viewModel, w)
 		if err != nil {
 			s.logger.WithError(err).Error("failed to render composer")
@@ -121,15 +125,80 @@ func (s Server) adminOnly(h http.HandlerFunc) http.HandlerFunc {
 	}
 }
 
+func (s Server) handleAddLocationToComposer() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		lat, _ := strconv.ParseFloat(r.FormValue("lat"), 64)
+		lng, _ := strconv.ParseFloat(r.FormValue("lng"), 64)
+		loc := app.Location{
+			Lat:      lat,
+			Lng:      lng,
+			Locality: r.FormValue("locality"),
+			Region:   r.FormValue("region"),
+			Country:  r.FormValue("country"),
+		}
+
+		// TODO fetch session from context
+		sess, ok := r.Context().Value(contextKeySessionID).(app.SessionData)
+		if !ok {
+			s.logger.Error("failed fetch session from context")
+		}
+
+		sess.Location = loc
+
+		s.logger.WithField("sess", sess).Info("added location to session")
+		err := s.App.SaveSession(sess)
+		if err != nil {
+			s.logger.WithError(err).Error("failed save session")
+		}
+		w.Header().Set("Location", "/admin/composer")
+		w.WriteHeader(http.StatusSeeOther)
+	}
+}
+
+func (s Server) handleComposerSubmit() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		// TODO fetch session from context
+		sess, ok := r.Context().Value(contextKeySessionID).(app.SessionData)
+		if !ok {
+			s.logger.Error("failed fetch session from context")
+			return
+		}
+
+		sess.Content = r.FormValue("content")
+		err := s.App.CreatePost(sess)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to create post")
+			return
+		}
+		sess = sess.Reset()
+
+		s.logger.WithField("sess", sess).Info("session")
+		err = s.App.SaveSession(sess)
+		if err != nil {
+			s.logger.WithError(err).Error("failed save session")
+		}
+
+		s.logger.Info("created post")
+		w.Header().Set("Location", "/admin/composer")
+		w.WriteHeader(http.StatusSeeOther)
+	}
+}
+
 func (s Server) handleAddMediaToComposer() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		mediaURL := r.FormValue("media_url")
 		media := s.App.ShowMediaDetail(mediaURL)
+
+		// TODO fetch session from context
 		sess, ok := r.Context().Value(contextKeySessionID).(app.SessionData)
 		if !ok {
 			s.logger.Error("failed fetch session from context")
 		}
 		sess.Media = append(sess.Media, media.Media)
+		sess.Published = media.Media.DateTime
+
 		s.logger.WithField("sess", sess).Info("session")
 		err := s.App.SaveSession(sess)
 		if err != nil {
@@ -137,6 +206,19 @@ func (s Server) handleAddMediaToComposer() http.HandlerFunc {
 		}
 		w.Header().Set("Location", "/admin/composer")
 		w.WriteHeader(http.StatusSeeOther)
+	}
+}
+
+func (s Server) handleLocationSearch() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		locationQuery := r.URL.Query().Get("location")
+		locations := s.App.SearchLocations(locationQuery)
+		viewModel := s.presenter.ParseLocationSearch(locationQuery, locations)
+		err := renderLocationSearch(viewModel, w)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to render location search")
+		}
+
 	}
 }
 

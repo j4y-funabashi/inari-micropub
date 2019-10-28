@@ -1,0 +1,54 @@
+{{ define "content" }}
+
+<div class="container">
+  <h1 class="title">{{ .PageTitle }}</h1>
+
+  <form
+    method="get"
+    action="/admin/composer/location"
+    enctype="application/x-www-form-urlencoded"
+  >
+    <div class="field">
+      <div class="control">
+        <input type="text" name="location" class="input" />
+      </div>
+    </div>
+
+    <div class="field">
+      <div class="control">
+        <button type="submit" class="button is-primary is-fullwidth">
+          Search
+        </button>
+      </div>
+    </div>
+  </form>
+
+  {{ with .Model.Query }}
+  <h2 class="title">Results for "{{ . }}"</h2>
+  {{ end }}
+
+  <div>
+    {{ range .Model.Locations }}
+    <form
+      method="post"
+      action="/admin/composer/location"
+      enctype="application/x-www-form-urlencoded"
+    >
+      <div class="field">
+        <div class="control">
+          <input type="hidden" name="lat" value="{{ .Lat }}" />
+          <input type="hidden" name="lng" value="{{ .Lng }}" />
+          <input type="hidden" name="locality" value="{{ .Locality }}" />
+          <input type="hidden" name="region" value="{{ .Region }}" />
+          <input type="hidden" name="country" value="{{ .Country }}" />
+          <button type="submit" class="button is-fullwidth">
+            {{ .Location }}
+          </button>
+        </div>
+      </div>
+    </form>
+    {{ end }}
+  </div>
+</div>
+
+{{ end }}
