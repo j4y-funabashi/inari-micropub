@@ -159,8 +159,8 @@ func (geocoder Geocoder) LookupLatLng(lat, lng float64) []app.Location {
 
 	for _, result := range geocodeRes.Response {
 		locList = append(locList, app.Location{
-			Lat:      result.Geometry.Location.Lat,
-			Lng:      result.Geometry.Location.Lng,
+			Lat:      lat,
+			Lng:      lng,
 			Locality: result.getLocality(),
 			Region:   result.GetComponent("administrative_area_level_2"),
 			Country:  result.GetComponent("country"),

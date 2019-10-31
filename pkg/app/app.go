@@ -57,11 +57,11 @@ type Media struct {
 }
 
 type Location struct {
-	Lat      float64 `json:"lat"`
-	Lng      float64 `json:"lng"`
+	Lat      float64 `json:"latitude"`
+	Lng      float64 `json:"longitude"`
 	Locality string  `json:"locality"`
 	Region   string  `json:"region"`
-	Country  string  `json:"country"`
+	Country  string  `json:"country-name"`
 }
 
 func (l Location) isValid() bool {
@@ -73,6 +73,24 @@ func (l Location) isValid() bool {
 
 func (l Location) toGeoURL() string {
 	return fmt.Sprintf("geo:%g,%g", l.Lat, l.Lng)
+}
+
+func (l Location) ToMf2() mf2.MicroFormat {
+	mfType := []string{"h-adr"}
+
+	props := make(map[string][]interface{})
+	props["latitude"] = append(props["latitude"], l.Lat)
+	props["longitude"] = append(props["longitude"], l.Lng)
+	props["locality"] = append(props["locality"], l.Locality)
+	props["region"] = append(props["region"], l.Region)
+	props["country-name"] = append(props["country-name"], l.Country)
+
+	mf := mf2.MicroFormat{
+		Type:       mfType,
+		Properties: props,
+	}
+
+	return mf
 }
 
 type Selecta interface {
@@ -121,16 +139,16 @@ type ShowMediaResponse struct {
 }
 
 type ShowMediaDetailResponse struct {
-	Media     Media
-	Locations []Location
+	Media Media
 }
 
 type SessionData struct {
-	Token     string     `json:"token"`
-	Media     []Media    `json:"media"`
-	Location  Location   `json:"location"`
-	Published *time.Time `json:"published"`
-	Content   string     `json:"content"`
+	Token              string     `json:"token"`
+	Media              []Media    `json:"media"`
+	Location           Location   `json:"location"`
+	SuggestedLocations []Location `json:"suggested_locations"`
+	Published          *time.Time `json:"published"`
+	Content            string     `json:"content"`
 }
 
 func (s SessionData) Reset() SessionData {
@@ -146,6 +164,7 @@ func (s SessionData) CookieValue(maxAge int) string {
 func (s SessionData) ToMf2() mf2.MicroFormat {
 	uid := uuid.NewV4()
 	mfType := []string{"h-entry"}
+	now := time.Now()
 
 	props := make(map[string][]interface{})
 	props["uid"] = append(props["uid"], uid.String())
@@ -157,13 +176,14 @@ func (s SessionData) ToMf2() mf2.MicroFormat {
 
 	// location
 	if s.Location.isValid() {
-		props["location"] = append(props["location"], s.Location.toGeoURL())
+		props["location"] = append(props["location"], s.Location.ToMf2())
 	}
 
 	// published
-	if s.Published != nil {
-		props["published"] = append(props["published"], s.Published)
+	if s.Published == nil {
+		s.Published = &now
 	}
+	props["published"] = append(props["published"], s.Published.Format(time.RFC3339))
 
 	// content
 	if s.Content != "" {
@@ -232,6 +252,14 @@ func (s Server) SearchLocations(query string) []Location {
 	return locations
 }
 
+func (s Server) SearchLocationsByLatLng(lat, lng float64) []Location {
+	if lat == 0 && lng == 0 {
+		return []Location{}
+	}
+	locations := s.geo.LookupLatLng(lat, lng)
+	return locations
+}
+
 func (s Server) ShowMediaDetail(mediaURL string) ShowMediaDetailResponse {
 	out := ShowMediaDetailResponse{}
 
@@ -241,10 +269,7 @@ func (s Server) ShowMediaDetail(mediaURL string) ShowMediaDetailResponse {
 		return out
 	}
 
-	locations := s.geo.LookupLatLng(media.Lat, media.Lng)
-
 	out.Media = media
-	out.Locations = locations
 
 	return out
 }

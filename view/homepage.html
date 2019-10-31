@@ -42,8 +42,12 @@
       </div>
       {{ end }} {{ end }}
       <div class="card-content">
+        <div class="content">at {{ .Location }}</div>
+
         <div class="content">
-          <p>{{ .Content }}</p>
+          {{ with .Content }}
+          <p>{{ . }}</p>
+          {{ end }}
           <time
             class="dt-published has-text-grey-light"
             datetime="{{ .Published }}"

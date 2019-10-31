@@ -199,6 +199,12 @@ func (s Server) handleAddMediaToComposer() http.HandlerFunc {
 		sess.Media = append(sess.Media, media.Media)
 		sess.Published = media.Media.DateTime
 
+		// TODO if media has lat/lng then search for suggested Locations
+		if media.Media.Lat != 0 && media.Media.Lng != 0 {
+			locations := s.App.SearchLocationsByLatLng(media.Media.Lat, media.Media.Lng)
+			sess.SuggestedLocations = locations
+		}
+
 		s.logger.WithField("sess", sess).Info("session")
 		err := s.App.SaveSession(sess)
 		if err != nil {

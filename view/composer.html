@@ -14,6 +14,14 @@
     action="/admin/composer"
     enctype="application/x-www-form-urlencoded"
   >
+    <div class="field">
+      <div class="control">
+        <button type="submit" class="button is-primary is-fullwidth">
+          Post
+        </button>
+      </div>
+    </div>
+
     <textarea
       name="content"
       placeholder="Add a caption"
@@ -51,15 +59,26 @@
         </ul>
       </div>
     </div>
-
-    <div class="field">
-      <div class="control">
-        <button type="submit" class="button is-primary is-fullwidth">
-          Post
-        </button>
-      </div>
-    </div>
   </form>
 </div>
 
-{{ end }}
+{{ with .Model.SuggestedLocations }} {{ range . }}
+<form
+  method="post"
+  action="/admin/composer/location"
+  enctype="application/x-www-form-urlencoded"
+>
+  <div class="field">
+    <div class="control">
+      <input type="hidden" name="lat" value="{{ .Lat }}" />
+      <input type="hidden" name="lng" value="{{ .Lng }}" />
+      <input type="hidden" name="locality" value="{{ .Locality }}" />
+      <input type="hidden" name="region" value="{{ .Region }}" />
+      <input type="hidden" name="country" value="{{ .Country }}" />
+      <button type="submit" class="button">
+        {{ .Location }}
+      </button>
+    </div>
+  </div>
+</form>
+{{ end }} {{ end }} {{ end }}

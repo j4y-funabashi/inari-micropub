@@ -116,7 +116,6 @@ func (list PostList) Slice(from, to int) PostList {
 type MicroFormat struct {
 	Type       []string                 `json:"type"`
 	Properties map[string][]interface{} `json:"properties"`
-	Children   []interface{}            `json:"children,omitempty"`
 }
 
 func (mf MicroFormat) Feeds() []string {
@@ -175,7 +174,7 @@ func (mf MicroFormat) ToView() MicroFormatView {
 	out.Category = mf.getStringSlice("category")
 	out.Photo = mf.getStringSlice("photo")
 	out.Video = mf.getStringSlice("video")
-	out.Location = mf.getFirstString("location")
+	out.Location = mf.parseLocation()
 	out.Author = mf.getFirstString("author")
 	out.Published = mf.parsePublishedValue()
 	out.Updated = mf.getFirstString("updated")
@@ -205,9 +204,14 @@ func (mf *MicroFormat) AddProperty(k string, v interface{}) {
 	mf.Properties[k] = append(mf.Properties[k], v)
 }
 
-// Appends a child
-func (mf *MicroFormat) AddChild(v interface{}) {
-	mf.Children = append(mf.Children, v)
+func getFirstString(properties []interface{}) string {
+	for _, v := range properties {
+		p, ok := v.(string)
+		if ok {
+			return p
+		}
+	}
+	return ""
 }
 
 func (mf MicroFormat) getFirstString(key string) string {
@@ -247,40 +251,64 @@ func (mf MicroFormat) parseContentValue() template.HTML {
 	return template.HTML("")
 }
 
+func (mf MicroFormat) parseLocation() string {
+	for _, v := range mf.Properties["location"] {
+		location, ok := v.(map[string]interface{})
+		if ok {
+			locType, ok := location["type"].([]interface{})
+			if ok {
+				if getFirstString(locType) == "h-adr" {
+					out := []string{}
+					props, ok := location["properties"].(map[string]interface{})
+					if ok {
+						locality, ok := props["locality"].([]interface{})
+						if ok && getFirstString(locality) != "" {
+							out = append(out, getFirstString(locality))
+						}
+						region, ok := props["region"].([]interface{})
+						if ok && getFirstString(region) != "" {
+							out = append(out, getFirstString(region))
+						}
+						country, ok := props["country-name"].([]interface{})
+						if ok && getFirstString(country) != "" {
+							out = append(out, getFirstString(country))
+						}
+					}
+					return strings.Join(out[:], ", ")
+				}
+			}
+		}
+	}
+	return ""
+}
+
 func (mf MicroFormat) parsePublishedValue() string {
 	d := normalizeDate(mf.getFirstString("published"))
 	return d.Format(time.RFC3339)
 }
 
 type MicroFormatView struct {
-	Type        string            `json:"type,omitempty"`
-	Uid         string            `json:"uid,omitempty"`
-	Url         string            `json:"url,omitempty"`
-	Published   string            `json:"published,omitempty"`
-	Updated     string            `json:"updated,omitempty"`
-	Author      string            `json:"author,omitempty"`
-	Name        string            `json:"name,omitempty"`
-	Summary     string            `json:"summary,omitempty"`
-	Content     template.HTML     `json:"content,omitempty"`
-	Rsvp        string            `json:"rsvp,omitempty"`
-	Location    string            `json:"location,omitempty"`
-	RepostOf    []string          `json:"repost_of,omitempty"`
-	LikeOf      []string          `json:"like_of,omitempty"`
-	BookmarkOf  []string          `json:"bookmark_of,omitempty"`
-	Category    []string          `json:"category,omitempty"`
-	Syndication []string          `json:"syndication,omitempty"`
-	InReplyTo   []string          `json:"in_reply_to,omitempty"`
-	Photo       []string          `json:"photo,omitempty"`
-	Comment     []string          `json:"comment,omitempty"`
-	Video       []string          `json:"video,omitempty"`
-	Children    []MicroFormatView `json:"children,omitempty"`
-	Archive     string            `json:"archive,omitempty"`
-}
-
-func (jf2 *MicroFormatView) SortChildren() {
-	sort.Slice(jf2.Children, func(a, b int) bool {
-		return jf2.Children[a].Published > jf2.Children[b].Published
-	})
+	Type        string        `json:"type,omitempty"`
+	Uid         string        `json:"uid,omitempty"`
+	Url         string        `json:"url,omitempty"`
+	Published   string        `json:"published,omitempty"`
+	Updated     string        `json:"updated,omitempty"`
+	Author      string        `json:"author,omitempty"`
+	Name        string        `json:"name,omitempty"`
+	Summary     string        `json:"summary,omitempty"`
+	Content     template.HTML `json:"content,omitempty"`
+	Rsvp        string        `json:"rsvp,omitempty"`
+	Location    string        `json:"location,omitempty"`
+	RepostOf    []string      `json:"repost_of,omitempty"`
+	LikeOf      []string      `json:"like_of,omitempty"`
+	BookmarkOf  []string      `json:"bookmark_of,omitempty"`
+	Category    []string      `json:"category,omitempty"`
+	Syndication []string      `json:"syndication,omitempty"`
+	InReplyTo   []string      `json:"in_reply_to,omitempty"`
+	Photo       []string      `json:"photo,omitempty"`
+	Comment     []string      `json:"comment,omitempty"`
+	Video       []string      `json:"video,omitempty"`
+	Archive     string        `json:"archive,omitempty"`
 }
 
 func (jf2 MicroFormatView) PrepForHugo() MicroFormatView {
@@ -325,11 +353,6 @@ func (jf2 MicroFormatView) Render(w io.Writer, imgProxy string) error {
 	}
 	if len(jf2.Content) > 0 {
 		err = t.ExecuteTemplate(&body, "content", jf2)
-	}
-	if len(jf2.Children) > 0 {
-		for _, child := range jf2.Children {
-			child.Render(&body, imgProxy)
-		}
 	}
 
 	var meta bytes.Buffer

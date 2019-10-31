@@ -91,10 +91,11 @@ func parseLocation(m app.Location) Location {
 }
 
 type ComposerView struct {
-	Media     []Media
-	Location  Location
-	Published string
-	HumanDate string
+	Media              []Media
+	Location           Location
+	SuggestedLocations []Location
+	Published          string
+	HumanDate          string
 }
 
 func (pres Presenter) ParseComposer(sess app.SessionData) ComposerView {
@@ -106,6 +107,9 @@ func (pres Presenter) ParseComposer(sess app.SessionData) ComposerView {
 	if sess.Published != nil {
 		out.Published = sess.Published.Format(time.RFC3339)
 		out.HumanDate = sess.Published.Format(humanDateLayout)
+	}
+	for _, loc := range sess.SuggestedLocations {
+		out.SuggestedLocations = append(out.SuggestedLocations, parseLocation(loc))
 	}
 	return out
 }
