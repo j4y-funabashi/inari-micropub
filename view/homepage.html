@@ -42,10 +42,10 @@
       </div>
       {{ end }} {{ end }}
       <div class="card-content">
-        <div class="content">at {{ .Location }}</div>
-
         <div class="content">
-          {{ with .Content }}
+          {{ with .Location }}
+          <p class="has-text-grey-light">{{ .Location }}</p>
+          {{ end }} {{ with .Content }}
           <p>{{ . }}</p>
           {{ end }}
           <time
