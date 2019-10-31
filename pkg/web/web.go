@@ -180,7 +180,7 @@ func (s Server) handleComposerSubmit() http.HandlerFunc {
 			s.logger.WithError(err).Error("failed save session")
 		}
 
-		s.logger.Info("created post")
+		s.logger.Info("created post!")
 		w.Header().Set("Location", "/admin/composer")
 		w.WriteHeader(http.StatusSeeOther)
 	}
