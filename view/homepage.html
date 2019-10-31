@@ -44,7 +44,7 @@
       <div class="card-content">
         <div class="content">
           {{ with .Location }}
-          <p class="has-text-grey-light">{{ .Location }}</p>
+          <p class="has-text-grey-light">{{ . }}</p>
           {{ end }} {{ with .Content }}
           <p>{{ . }}</p>
           {{ end }}
