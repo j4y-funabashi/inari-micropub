@@ -79,8 +79,14 @@ func (l Location) toGeoURL() string {
 
 func (l Location) ToMf2() mf2.MicroFormat {
 	mfType := []string{"h-adr"}
+	if l.Name != "" {
+		mfType := []string{"h-card"}
+	}
 
 	props := make(map[string][]interface{})
+	if l.Name != "" {
+		props["name"] = append(props["name"], l.Name)
+	}
 	props["latitude"] = append(props["latitude"], l.Lat)
 	props["longitude"] = append(props["longitude"], l.Lng)
 	props["locality"] = append(props["locality"], l.Locality)

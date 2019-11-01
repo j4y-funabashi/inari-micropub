@@ -257,10 +257,14 @@ func (mf MicroFormat) parseLocation() string {
 		if ok {
 			locType, ok := location["type"].([]interface{})
 			if ok {
-				if getFirstString(locType) == "h-adr" {
+				if getFirstString(locType) == "h-adr" || getFirstString(locType) == "h-card" {
 					out := []string{}
 					props, ok := location["properties"].(map[string]interface{})
 					if ok {
+						name, ok := props["name"].([]interface{})
+						if ok && getFirstString(name) != "" {
+							out = append(out, getFirstString(name))
+						}
 						locality, ok := props["locality"].([]interface{})
 						if ok && getFirstString(locality) != "" {
 							out = append(out, getFirstString(locality))
