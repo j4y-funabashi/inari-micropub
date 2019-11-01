@@ -70,6 +70,9 @@ func (pres Presenter) ParseLocationSearch(query string, locations []app.Location
 
 func parseLocation(m app.Location) Location {
 	loc := []string{}
+	if m.Name != "" {
+		loc = append(loc, m.Name)
+	}
 	if m.Locality != "" {
 		loc = append(loc, m.Locality)
 	}

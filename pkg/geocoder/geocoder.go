@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/j4y_funabashi/inari-micropub/pkg/app"
@@ -169,5 +170,68 @@ func (geocoder Geocoder) LookupLatLng(lat, lng float64) []app.Location {
 
 	geocoder.logger.
 		WithField("locList", locList).Info("response")
+	return locList
+}
+
+type venueResponse struct {
+	Response venueResults `json:"response"`
+}
+type venueResults struct {
+	Venues []venue `json:"venues"`
+}
+type venue struct {
+	Name     string        `json:"name"`
+	Location venueLocation `json:"location"`
+}
+type venueLocation struct {
+	City    string  `json:"city"`
+	State   string  `json:"state"`
+	Country string  `json:"country"`
+	Lat     float64 `json:"lat"`
+	Lng     float64 `json:"lng"`
+}
+
+func (geocoder Geocoder) LookupVenues(lat, lng float64) []app.Location {
+	locList := []app.Location{}
+
+	// build url
+	apiBaseURL, err := url.Parse("https://api.foursquare.com/v2/venues/search")
+	if err != nil {
+		geocoder.logger.WithError(err).Error("failed to parse url")
+		return locList
+	}
+	q := apiBaseURL.Query()
+	q.Add("intent", "checkin")
+	q.Add("ll", fmt.Sprintf("%g,%g", lat, lng))
+	q.Add("client_id", os.Getenv("VENUE_CLIENT_ID"))
+	q.Add("client_secret", os.Getenv("VENUE_API_KEY"))
+	q.Add("v", "20180323")
+	apiBaseURL.RawQuery = q.Encode()
+	geocoder.logger.WithField("url", apiBaseURL).Info("venue search")
+
+	// call url
+	resp, err := http.Get(apiBaseURL.String())
+	if err != nil {
+		geocoder.logger.WithError(err).Error("failed to GET")
+		return locList
+	}
+
+	// parse response
+	geocodeRes := venueResponse{}
+	buf := bytes.Buffer{}
+	buf.ReadFrom(resp.Body)
+	err = json.Unmarshal(buf.Bytes(), &geocodeRes)
+
+	for _, venue := range geocodeRes.Response.Venues {
+		locList = append(locList, app.Location{
+			Name:     venue.Name,
+			Lat:      venue.Location.Lat,
+			Lng:      venue.Location.Lng,
+			Locality: venue.Location.City,
+			Region:   venue.Location.State,
+			Country:  venue.Location.Country,
+		})
+	}
+
 	return locList
 }

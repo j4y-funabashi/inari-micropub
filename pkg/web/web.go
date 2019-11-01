@@ -202,7 +202,9 @@ func (s Server) handleAddMediaToComposer() http.HandlerFunc {
 		// TODO if media has lat/lng then search for suggested Locations
 		if media.Media.Lat != 0 && media.Media.Lng != 0 {
 			locations := s.App.SearchLocationsByLatLng(media.Media.Lat, media.Media.Lng)
-			sess.SuggestedLocations = locations
+			sess.AddSuggestedLocations(locations)
+			venues := s.App.SearchVenues(media.Media.Lat, media.Media.Lng)
+			sess.AddSuggestedLocations(venues)
 		}
 
 		s.logger.WithField("sess", sess).Info("session")

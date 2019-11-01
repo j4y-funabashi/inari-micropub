@@ -27,6 +27,7 @@ type Server struct {
 type Geocoder interface {
 	Lookup(address string) []Location
 	LookupLatLng(lat, lng float64) []Location
+	LookupVenues(lat, lng float64) []Location
 }
 
 type Year struct {
@@ -57,6 +58,7 @@ type Media struct {
 }
 
 type Location struct {
+	Name     string  `json:"name"`
 	Lat      float64 `json:"latitude"`
 	Lng      float64 `json:"longitude"`
 	Locality string  `json:"locality"`
@@ -154,6 +156,12 @@ type SessionData struct {
 func (s SessionData) Reset() SessionData {
 	return SessionData{
 		Token: s.Token,
+	}
+}
+
+func (s *SessionData) AddSuggestedLocations(locations []Location) {
+	for _, loc := range locations {
+		s.SuggestedLocations = append(s.SuggestedLocations, loc)
 	}
 }
 
@@ -257,6 +265,14 @@ func (s Server) SearchLocationsByLatLng(lat, lng float64) []Location {
 		return []Location{}
 	}
 	locations := s.geo.LookupLatLng(lat, lng)
+	return locations
+}
+
+func (s Server) SearchVenues(lat, lng float64) []Location {
+	if lat == 0 && lng == 0 {
+		return []Location{}
+	}
+	locations := s.geo.LookupVenues(lat, lng)
 	return locations
 }
 
