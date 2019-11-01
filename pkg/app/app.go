@@ -80,7 +80,7 @@ func (l Location) toGeoURL() string {
 func (l Location) ToMf2() mf2.MicroFormat {
 	mfType := []string{"h-adr"}
 	if l.Name != "" {
-		mfType := []string{"h-card"}
+		mfType = []string{"h-card"}
 	}
 
 	props := make(map[string][]interface{})
