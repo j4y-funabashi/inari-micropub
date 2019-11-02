@@ -133,6 +133,7 @@ func (s Server) handleAddLocationToComposer() http.HandlerFunc {
 		loc := app.Location{
 			Lat:      lat,
 			Lng:      lng,
+			Name:     r.FormValue("name"),
 			Locality: r.FormValue("locality"),
 			Region:   r.FormValue("region"),
 			Country:  r.FormValue("country"),

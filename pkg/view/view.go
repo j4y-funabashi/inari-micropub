@@ -14,6 +14,7 @@ var humanDateLayout = "Mon Jan 02, 2006"
 type Presenter struct{}
 
 type Location struct {
+	Name     string  `json:"name"`
 	Location string  `json:"location"`
 	Lat      float64 `json:"lat"`
 	Lng      float64 `json:"lng"`
@@ -83,6 +84,7 @@ func parseLocation(m app.Location) Location {
 		loc = append(loc, m.Country)
 	}
 	md := Location{
+		Name:     m.Name,
 		Lat:      m.Lat,
 		Lng:      m.Lng,
 		Locality: m.Locality,
