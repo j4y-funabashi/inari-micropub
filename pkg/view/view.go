@@ -217,7 +217,7 @@ func parseMedia(m app.Media) Media {
 
 func parseMediaColumns(mediaRes app.ShowMediaResponse) [][]Media {
 
-	columnCount := 3
+	columnCount := 4
 	out := [][]Media{}
 
 	i := 1
