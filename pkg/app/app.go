@@ -28,6 +28,7 @@ type Geocoder interface {
 	Lookup(address string) []Location
 	LookupLatLng(lat, lng float64) []Location
 	LookupVenues(lat, lng float64) []Location
+	SearchVenues(query string, lat, lng float64) []Location
 }
 
 type Year struct {
@@ -258,12 +259,15 @@ func (s Server) Auth(password string) (AuthResponse, error) {
 	return res, nil
 }
 
-func (s Server) SearchLocations(query string) []Location {
+func (s Server) SearchLocations(location Location, query string) []Location {
 	if query == "" {
 		return []Location{}
 	}
-	locations := s.geo.Lookup(query)
-	return locations
+
+	if location.isValid() {
+		return s.geo.SearchVenues(query, location.Lat, location.Lng)
+	}
+	return s.geo.Lookup(query)
 }
 
 func (s Server) SearchLocationsByLatLng(lat, lng float64) []Location {

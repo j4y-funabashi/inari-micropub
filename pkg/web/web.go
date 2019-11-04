@@ -220,14 +220,20 @@ func (s Server) handleAddMediaToComposer() http.HandlerFunc {
 
 func (s Server) handleLocationSearch() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		// TODO fetch session from context
+		sess, ok := r.Context().Value(contextKeySessionID).(app.SessionData)
+		if !ok {
+			s.logger.Error("failed fetch session from context")
+		}
+
 		locationQuery := r.URL.Query().Get("location")
-		locations := s.App.SearchLocations(locationQuery)
+		locations := s.App.SearchLocations(sess.Location, locationQuery)
 		viewModel := s.presenter.ParseLocationSearch(locationQuery, locations)
 		err := renderLocationSearch(viewModel, w)
 		if err != nil {
 			s.logger.WithError(err).Error("failed to render location search")
 		}
-
 	}
 }
 

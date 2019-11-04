@@ -92,7 +92,7 @@ func (geocoder Geocoder) Lookup(address string) []app.Location {
 	q.Add("key", geocoder.apiKey)
 	q.Add("address", address)
 	apiBaseURL.RawQuery = q.Encode()
-	geocoder.logger.WithField("url", apiBaseURL).Info("venue search")
+	geocoder.logger.WithField("url", apiBaseURL).Info("geocode")
 
 	// call url
 	resp, err := http.Get(apiBaseURL.String())
@@ -139,7 +139,7 @@ func (geocoder Geocoder) LookupLatLng(lat, lng float64) []app.Location {
 	q.Add("key", geocoder.apiKey)
 	q.Add("latlng", fmt.Sprintf("%g,%g", lat, lng))
 	apiBaseURL.RawQuery = q.Encode()
-	geocoder.logger.WithField("url", apiBaseURL).Info("venue search")
+	geocoder.logger.WithField("url", apiBaseURL).Info("geocode")
 
 	// call url
 	resp, err := http.Get(apiBaseURL.String())
@@ -205,6 +205,52 @@ func (geocoder Geocoder) LookupVenues(lat, lng float64) []app.Location {
 	q.Add("ll", fmt.Sprintf("%g,%g", lat, lng))
 	q.Add("client_id", os.Getenv("VENUE_CLIENT_ID"))
 	q.Add("client_secret", os.Getenv("VENUE_API_KEY"))
+	q.Add("v", "20180323")
+	apiBaseURL.RawQuery = q.Encode()
+	geocoder.logger.WithField("url", apiBaseURL).Info("venue lookup")
+
+	// call url
+	resp, err := http.Get(apiBaseURL.String())
+	if err != nil {
+		geocoder.logger.WithError(err).Error("failed to GET")
+		return locList
+	}
+
+	// parse response
+	geocodeRes := venueResponse{}
+	buf := bytes.Buffer{}
+	buf.ReadFrom(resp.Body)
+	err = json.Unmarshal(buf.Bytes(), &geocodeRes)
+
+	for _, venue := range geocodeRes.Response.Venues {
+		locList = append(locList, app.Location{
+			Name:     venue.Name,
+			Lat:      venue.Location.Lat,
+			Lng:      venue.Location.Lng,
+			Locality: venue.Location.City,
+			Region:   venue.Location.State,
+			Country:  venue.Location.Country,
+		})
+	}
+
+	return locList
+}
+
+func (geocoder Geocoder) SearchVenues(query string, lat, lng float64) []app.Location {
+	locList := []app.Location{}
+
+	// build url
+	apiBaseURL, err := url.Parse("https://api.foursquare.com/v2/venues/search")
+	if err != nil {
+		geocoder.logger.WithError(err).Error("failed to parse url")
+		return locList
+	}
+	q := apiBaseURL.Query()
+	q.Add("intent", "checkin")
+	q.Add("ll", fmt.Sprintf("%g,%g", lat, lng))
+	q.Add("client_id", os.Getenv("VENUE_CLIENT_ID"))
+	q.Add("client_secret", os.Getenv("VENUE_API_KEY"))
+	q.Add("query", query)
 	q.Add("v", "20180323")
 	apiBaseURL.RawQuery = q.Encode()
 	geocoder.logger.WithField("url", apiBaseURL).Info("venue search")
