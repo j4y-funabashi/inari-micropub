@@ -133,6 +133,63 @@ func NewMediaUploaded(data mf2.MediaMetadata) MediaUploadedEvent {
 		EventData:    data}
 }
 
+type MediaDeletedEvent struct {
+	EventID      string `json:"eventID"`
+	EventType    string `json:"eventType"`
+	EventVersion string `json:"eventVersion"`
+	EventData    string `json:"eventData"`
+}
+
+func NewMediaDeleted(mediaURL string) MediaDeletedEvent {
+	uid := uuid.NewV4()
+	return MediaDeletedEvent{
+		EventID:      uid.String(),
+		EventType:    "MediaDeleted",
+		EventVersion: time.Now().Format("20060102150405.0000"),
+		EventData:    mediaURL}
+}
+
+func (e MediaDeletedEvent) getFilekey() string {
+	return e.EventVersion + "_" + e.EventID + ".json"
+}
+
+func (e MediaDeletedEvent) getJSON() io.Reader {
+
+	eventjson := new(bytes.Buffer)
+	err := json.NewEncoder(eventjson).Encode(e)
+	if err != nil {
+		return new(bytes.Buffer)
+	}
+
+	return eventjson
+}
+
+func (e MediaDeletedEvent) reduce(sqlClient *sql.Tx) error {
+	_, err := sqlClient.Exec(
+		`DELETE FROM media WHERE id = $1`,
+		e.EventData,
+	)
+	return err
+}
+
+func (e MediaDeletedEvent) save(sqlClient *sql.Tx, s3Client s3.Client, s3KeyPrefix, s3Bucket string) error {
+	eventData := e.getJSON()
+	fileKey := path.Join(
+		s3KeyPrefix,
+		time.Now().Format("2006"),
+		e.getFilekey(),
+	)
+
+	err := s3Client.WriteObject(
+		fileKey,
+		s3Bucket,
+		eventData,
+		true,
+	)
+
+	return err
+}
+
 type PostCreatedEvent struct {
 	EventID      string          `json:"eventID"`
 	EventType    string          `json:"eventType"`

@@ -221,6 +221,11 @@ type AuthResponse struct {
 	Session SessionData
 }
 
+func (s Server) DeleteMedia(mediaURL string) error {
+	event := eventlog.NewMediaDeleted(mediaURL)
+	return s.el.Append(event)
+}
+
 func (s Server) CreatePost(sess SessionData) error {
 	mf := sess.ToMf2()
 	event := eventlog.NewPostCreated(mf)

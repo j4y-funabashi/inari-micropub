@@ -46,6 +46,7 @@ func (s Server) Routes(router *mux.Router) {
 	router.HandleFunc("/admin/composer/media/detail", s.adminOnly(s.handleMediaDetail())).Methods("GET")
 	router.HandleFunc("/admin/composer/location", s.adminOnly(s.handleLocationSearch())).Methods("GET")
 	router.HandleFunc("/admin/composer/location", s.adminOnly(s.handleAddLocationToComposer())).Methods("POST")
+	router.HandleFunc("/admin/media/delete", s.adminOnly(s.handleDeleteMedia())).Methods("POST")
 }
 
 func (s Server) handleHomepage() http.HandlerFunc {
@@ -218,6 +219,24 @@ func (s Server) handleComposerSubmit() http.HandlerFunc {
 		}
 
 		s.logger.Info("created post!")
+		w.Header().Set("Location", "/admin/composer")
+		w.WriteHeader(http.StatusSeeOther)
+	}
+}
+
+func (s Server) handleDeleteMedia() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		mediaURL := r.FormValue("media_url")
+		err := s.App.DeleteMedia(mediaURL)
+		if err != nil {
+			s.logger.
+				WithError(err).
+				WithField("media_url", mediaURL).
+				Error("failed to delete media")
+			return
+		}
+
 		w.Header().Set("Location", "/admin/composer")
 		w.WriteHeader(http.StatusSeeOther)
 	}

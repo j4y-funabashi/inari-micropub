@@ -9,10 +9,28 @@
       {{ .Model.Media.DateTime }}
     </div>
 
-    <form method="post" action="/admin/composer/media">
-      <input type="hidden" name="media_url" value="{{ .Model.Media.URL }}" />
-      <button class="button is-link">Add to post</button>
-    </form>
+    <div class="columns is-mobile is-gapless">
+      <div class="column is-one-third">
+        <form method="post" action="/admin/media/delete">
+          <input
+            type="hidden"
+            name="media_url"
+            value="{{ .Model.Media.URL }}"
+          />
+          <button class="button is-danger is-fullwidth">Delete</button>
+        </form>
+      </div>
+      <div class="column is-two-thirds">
+        <form method="post" action="/admin/composer/media">
+          <input
+            type="hidden"
+            name="media_url"
+            value="{{ .Model.Media.URL }}"
+          />
+          <button class="button is-link is-fullwidth">Add to post</button>
+        </form>
+      </div>
+    </div>
   </div>
 </div>
 {{ end }}
