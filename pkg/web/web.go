@@ -2,6 +2,7 @@
 package web
 
 import (
+	"bytes"
 	"context"
 	"net/http"
 	"strconv"
@@ -35,6 +36,7 @@ func NewServer(
 }
 
 func (s Server) Routes(router *mux.Router) {
+	router.HandleFunc("/", s.handleHomepage()).Methods("GET")
 	router.HandleFunc("/login", s.handleLoginForm()).Methods("GET")
 	router.HandleFunc("/login", s.handleLogin()).Methods("POST")
 	router.HandleFunc("/admin/composer", s.adminOnly(s.handleComposerForm())).Methods("GET")
@@ -44,6 +46,40 @@ func (s Server) Routes(router *mux.Router) {
 	router.HandleFunc("/admin/composer/media/detail", s.adminOnly(s.handleMediaDetail())).Methods("GET")
 	router.HandleFunc("/admin/composer/location", s.adminOnly(s.handleLocationSearch())).Methods("GET")
 	router.HandleFunc("/admin/composer/location", s.adminOnly(s.handleAddLocationToComposer())).Methods("POST")
+}
+
+func (s Server) handleHomepage() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		// fetch latest posts
+		limit := 12
+		after := r.URL.Query().Get("after")
+		postList, err := s.App.QueryPostList(limit, after)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to query post list")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// view.render
+		outBuf := new(bytes.Buffer)
+		err = renderHomepage(outBuf, postList.PostList, postList.AfterKey)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to render homepage")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-type", "text/html; charset=UTF-8")
+		w.WriteHeader(http.StatusOK)
+		_, err = w.Write(outBuf.Bytes())
+		if err != nil {
+			s.logger.WithError(err).Error("failed to write html")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		return
+	}
 }
 
 func (s Server) handleMediaDetail() http.HandlerFunc {

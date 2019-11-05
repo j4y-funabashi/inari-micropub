@@ -8,7 +8,6 @@ import (
 	"github.com/j4y_funabashi/inari-micropub/pkg/app"
 	"github.com/j4y_funabashi/inari-micropub/pkg/db"
 	"github.com/j4y_funabashi/inari-micropub/pkg/eventlog"
-	"github.com/j4y_funabashi/inari-micropub/pkg/frontend"
 	"github.com/j4y_funabashi/inari-micropub/pkg/geocoder"
 	"github.com/j4y_funabashi/inari-micropub/pkg/indieauth"
 	"github.com/j4y_funabashi/inari-micropub/pkg/micropub"
@@ -83,7 +82,6 @@ func main() {
 		geo,
 		eventLog,
 	)
-	frontendServer := frontend.NewServer(inari, logger)
 	presenter := view.NewPresenter()
 	webServer := web.NewServer(inari, logger, presenter)
 
@@ -91,7 +89,6 @@ func main() {
 	router := mux.NewRouter()
 	router.StrictSlash(true)
 	micropubServer.Routes(router.PathPrefix("/micropub").Subrouter())
-	frontendServer.Routes(router)
 	webServer.Routes(router)
 
 	go eventLog.Replay()

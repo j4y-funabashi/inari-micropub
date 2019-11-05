@@ -43,10 +43,10 @@
       {{ end }} {{ end }}
       <div class="card-content">
         <div class="content">
-          {{ with .Location }}
-          <p class="has-text-grey-light">{{ . }}</p>
-          {{ end }} {{ with .Content }}
-          <p>{{ . }}</p>
+          {{ with .Content }}
+          <p class="is-marginless">{{ . }}</p>
+          {{ end }} {{ with .Location }}
+          <p class="is-marginless has-text-grey-light">{{ . }}</p>
           {{ end }}
           <time
             class="dt-published has-text-grey-light"
