@@ -322,6 +322,10 @@ func decodeEvent(eventJSON string) (Event, error) {
 		ev := MediaUploadedEvent{}
 		json.Unmarshal([]byte(eventJSON), &ev)
 		return ev, nil
+	case "MediaDeleted":
+		ev := MediaDeletedEvent{}
+		json.Unmarshal([]byte(eventJSON), &ev)
+		return ev, nil
 	}
 
 	return nullEvent{}, nil
