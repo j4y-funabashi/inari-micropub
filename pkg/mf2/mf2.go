@@ -118,6 +118,12 @@ type MicroFormat struct {
 	Properties map[string][]interface{} `json:"properties"`
 }
 
+func (mf *MicroFormat) ApplyUpdate(updates map[string][]interface{}) {
+	for k, v := range updates {
+		mf.Properties[k] = v
+	}
+}
+
 func (mf MicroFormat) Feeds() []string {
 	ym := parseYearMonth(mf.getFirstString("published"))
 	return []string{"all", ym}

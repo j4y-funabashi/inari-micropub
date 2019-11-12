@@ -133,6 +133,64 @@ func NewMediaUploaded(data mf2.MediaMetadata) MediaUploadedEvent {
 		EventData:    data}
 }
 
+type PostUpdatedEvent struct {
+	EventID      string          `json:"eventID"`
+	EventType    string          `json:"eventType"`
+	EventVersion string          `json:"eventVersion"`
+	EventData    mf2.MicroFormat `json:"eventData"`
+}
+
+func NewPostUpdated(mf mf2.MicroFormat) PostUpdatedEvent {
+	uid := uuid.NewV4()
+	return PostUpdatedEvent{
+		EventID:      uid.String(),
+		EventType:    "PostUpdated",
+		EventVersion: time.Now().Format("20060102150405.0000"),
+		EventData:    mf}
+}
+func (e PostUpdatedEvent) getFilekey() string {
+	return e.EventVersion + "_" + e.EventID + ".json"
+}
+func (e PostUpdatedEvent) getJSON() io.Reader {
+	eventjson := new(bytes.Buffer)
+	err := json.NewEncoder(eventjson).Encode(e)
+	if err != nil {
+		return new(bytes.Buffer)
+	}
+	return eventjson
+}
+func (e PostUpdatedEvent) save(sqlClient *sql.Tx, s3Client s3.Client, s3KeyPrefix, s3Bucket string) error {
+	eventData := e.getJSON()
+	fileKey := path.Join(
+		s3KeyPrefix,
+		time.Now().Format("2006"),
+		e.getFilekey(),
+	)
+	err := s3Client.WriteObject(
+		fileKey,
+		s3Bucket,
+		eventData,
+		true,
+	)
+	return err
+}
+
+func (e PostUpdatedEvent) reduce(sqlClient *sql.Tx) error {
+
+	buf := new(bytes.Buffer)
+	err := json.NewEncoder(buf).Encode(e.EventData)
+	if err != nil {
+		return err
+	}
+
+	_, err = sqlClient.Exec(
+		`UPDATE posts SET data = $1 WHERE id = $2`,
+		buf.String(),
+		e.EventData.GetFirstString("url"),
+	)
+	return err
+}
+
 type MediaDeletedEvent struct {
 	EventID      string `json:"eventID"`
 	EventType    string `json:"eventType"`

@@ -9,7 +9,12 @@ import (
 	"github.com/j4y_funabashi/inari-micropub/pkg/view"
 )
 
-func renderHomepage(outBuf *bytes.Buffer, postList []mf2.MicroFormatView, afterKey string) error {
+func renderHomepage(outBuf *bytes.Buffer, postList []mf2.MicroFormat, afterKey string) error {
+
+	pl := []mf2.MicroFormatView{}
+	for _, mf2 := range postList {
+		pl = append(pl, mf2.ToView())
+	}
 
 	t, err := template.ParseFiles(
 		"view/layout.html",
@@ -24,7 +29,7 @@ func renderHomepage(outBuf *bytes.Buffer, postList []mf2.MicroFormatView, afterK
 		AfterKey  string
 	}{
 		PageTitle: "jay.funabashi",
-		PostList:  postList,
+		PostList:  pl,
 		AfterKey:  afterKey,
 	}
 	err = t.ExecuteTemplate(outBuf, "layout", v)

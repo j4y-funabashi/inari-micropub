@@ -4,7 +4,10 @@ package web
 import (
 	"bytes"
 	"context"
+	"encoding/json"
+	"io/ioutil"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -17,26 +20,32 @@ type Server struct {
 	App       app.Server
 	logger    *logrus.Logger
 	presenter view.Presenter
+	parser    Parser
 }
 
 type contextKey string
 
 var contextKeySessionID = contextKey("session-id")
+var contextKeyAccessToken = contextKey("access-token")
 
 func NewServer(
 	a app.Server,
 	logger *logrus.Logger,
 	p view.Presenter,
+	parser Parser,
 ) Server {
 	return Server{
 		App:       a,
 		logger:    logger,
 		presenter: p,
+		parser:    parser,
 	}
 }
 
 func (s Server) Routes(router *mux.Router) {
 	router.HandleFunc("/", s.handleHomepage()).Methods("GET")
+	router.HandleFunc("/micropub", s.withBearerToken(s.handleMicropubCommand())).Methods("POST")
+	router.HandleFunc("/micropub", s.withBearerToken(s.handleMicropubQuery())).Methods("GET")
 	router.HandleFunc("/login", s.handleLoginForm()).Methods("GET")
 	router.HandleFunc("/login", s.handleLogin()).Methods("POST")
 	router.HandleFunc("/admin/composer", s.adminOnly(s.handleComposerForm())).Methods("GET")
@@ -47,6 +56,79 @@ func (s Server) Routes(router *mux.Router) {
 	router.HandleFunc("/admin/composer/location", s.adminOnly(s.handleLocationSearch())).Methods("GET")
 	router.HandleFunc("/admin/composer/location", s.adminOnly(s.handleAddLocationToComposer())).Methods("POST")
 	router.HandleFunc("/admin/media/delete", s.adminOnly(s.handleDeleteMedia())).Methods("POST")
+}
+
+func (s Server) handleMicropubQuery() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		// TODO
+		accessToken, ok := r.Context().Value(contextKeyAccessToken).(app.TokenResponse)
+		if !ok {
+			s.logger.Error("failed fetch access token from context")
+		}
+		s.logger.WithField("access_token", accessToken).Info("found access token")
+
+		switch r.URL.Query().Get("q") {
+		case "source":
+			limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
+			if limit == 0 {
+				limit = 30
+			}
+			after := r.URL.Query().Get("after")
+			posts, err := s.App.QueryPostList(limit, after)
+			if err != nil {
+				s.logger.WithError(err).Error("failed to query post list")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+
+			buf := bytes.NewBuffer([]byte{})
+			err = json.NewEncoder(buf).Encode(posts.PostList)
+			if err != nil {
+				s.logger.WithError(err).Error("failed to encode post list")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			w.Header().Add("Content-type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write(buf.Bytes())
+		}
+	}
+}
+
+func (s Server) handleMicropubCommand() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		// TODO
+		accessToken, ok := r.Context().Value(contextKeyAccessToken).(app.TokenResponse)
+		if !ok {
+			s.logger.Error("failed fetch access token from context")
+		}
+
+		bodyBytes, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to read request body")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		r.Body.Close()
+		action := s.parser.ParseMicropubPostAction(bodyBytes)
+		s.logger.
+			WithField("access_token", accessToken).
+			WithField("action", action).Info("micropub cmd!")
+
+		switch action {
+		case "create":
+		case "update":
+			updateRequest := s.parser.ParseUpdateRequest(bodyBytes)
+			err := s.App.UpdatePost(updateRequest)
+			if err != nil {
+				s.logger.WithError(err).Error("failed to update post")
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+		}
+	}
 }
 
 func (s Server) handleHomepage() http.HandlerFunc {
@@ -133,6 +215,29 @@ func (s Server) handleLoginForm() http.HandlerFunc {
 		if err != nil {
 			s.logger.WithError(err).Error("failed to render media gallery")
 		}
+	}
+}
+
+func (s Server) withBearerToken(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		bearerToken := r.Header.Get("Authorization")
+		if bearerToken == "" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		tokenEndpoint := os.Getenv("TOKEN_ENDPOINT")
+		accessToken, err := s.App.VerifyAccessToken(tokenEndpoint, bearerToken)
+		if err != nil {
+			s.logger.WithError(err).Error("failed to verify access token")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		if accessToken.IsValid() == false {
+			w.WriteHeader(http.StatusForbidden)
+			return
+		}
+		ctx := context.WithValue(r.Context(), contextKeyAccessToken, accessToken)
+		h(w, r.WithContext(ctx))
 	}
 }
 

@@ -92,7 +92,7 @@ func (s Server) Routes(router *mux.Router) {
 	siteURL := os.Getenv("SITE_URL")
 
 	router.HandleFunc("/health", s.handleHealthcheck())
-	router.HandleFunc("/", s.handleMicropub(siteURL))
+	router.HandleFunc("/oldendpoint", s.handleMicropub(siteURL))
 	router.HandleFunc("/media", s.handleMedia(baseURL)).Methods("POST")
 	router.HandleFunc("/media", s.handleMediaQuery()).Methods("GET")
 	router.HandleFunc("/media/{year}/{fileKey}", s.handleMediaDownload()).Methods("GET")
@@ -472,28 +472,27 @@ func (s Server) CreatePost(
 	tokenRes indieauth.TokenResponse,
 ) (*CreatePostResponse, error) {
 
-	// create post
-	uid := uuid.NewV4()
-	s.logger.
-		WithField("content_type", contentType).
-		Info("checking Content-type header")
+	// CREATE MICROFORMAT
 	mf, err := s.buildMF(body, contentType)
 	if err != nil {
 		s.logger.WithError(err).Error("failed to build mf")
 		return nil, err
 	}
+	// uid
+	uid := uuid.NewV4()
 	uuid := uid.String()
 	if mf.GetFirstString("uid") != "" {
 		uuid = mf.GetFirstString("uid")
 	}
+	// url
 	postURL := strings.TrimRight(baseURL, "/") + "/p/" + uuid
 	mf.SetDefaults(tokenRes.Me, uuid, postURL)
 	s.logger.
 		WithField("mf", mf).
 		Info("mf built")
-	event := eventlog.NewPostCreated(mf)
 
 	// add event to eventlog
+	event := eventlog.NewPostCreated(mf)
 	err = s.eventLog.Append(event)
 	if err != nil {
 		s.logger.WithError(err).Error("failed to save post")

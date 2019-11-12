@@ -2,10 +2,13 @@
 package app
 
 import (
+	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 	"time"
@@ -109,6 +112,7 @@ type Selecta interface {
 	SelectMediaDay(year, month, day string) ([]Media, error)
 	SelectMediaByURL(url string) (Media, error)
 	SelectPostList(limit int, afterKey string) mf2.PostList
+	SelectPostByURL(uid string) (mf2.MicroFormat, error)
 }
 
 type SessionStore interface {
@@ -223,6 +227,77 @@ type AuthResponse struct {
 
 func (s Server) DeleteMedia(mediaURL string) error {
 	event := eventlog.NewMediaDeleted(mediaURL)
+	return s.el.Append(event)
+}
+
+type UpdatePostRequest struct {
+	URL        string
+	Type       string
+	Properties map[string][]interface{} `json:"properties"`
+}
+
+func (s Server) VerifyAccessToken(
+	tokenEndpoint,
+	bearerToken string,
+) (TokenResponse, error) {
+
+	// build request
+	req, err := http.NewRequest("GET", tokenEndpoint, nil)
+	if err != nil {
+		s.logger.WithError(err).Error("failed to create verify token")
+		return TokenResponse{}, err
+	}
+	bearerToken = "Bearer " + strings.TrimSpace(strings.Replace(bearerToken, "Bearer", "", -1))
+	req.Header.Add("Authorization", bearerToken)
+	req.Header.Add("Accept", "application/json")
+
+	// make request
+	c := &http.Client{}
+	resp, err := c.Do(req)
+	if err != nil {
+		s.logger.WithError(err).Error("failed to verify token")
+		return TokenResponse{}, err
+	}
+
+	// read response
+	tokenRes := TokenResponse{StatusCode: resp.StatusCode}
+	buf := bytes.Buffer{}
+	buf.ReadFrom(resp.Body)
+	err = json.Unmarshal(buf.Bytes(), &tokenRes)
+	if err != nil {
+		s.logger.WithError(err).Error("failed to unmarshal verify token response")
+		return TokenResponse{}, err
+	}
+	return tokenRes, nil
+}
+
+type TokenResponse struct {
+	Me         string `json:"me"`
+	ClientID   string `json:"client_id"`
+	Scope      string `json:"scope"`
+	StatusCode int
+}
+
+func (tr TokenResponse) IsValid() bool {
+	if tr.StatusCode != 200 {
+		return false
+	}
+	if strings.TrimSpace(tr.Me) == "" {
+		return false
+	}
+	if strings.TrimSpace(tr.Scope) == "" {
+		return false
+	}
+	return true
+}
+
+func (s Server) UpdatePost(req UpdatePostRequest) error {
+	mf, err := s.selecta.SelectPostByURL(req.URL)
+	if err != nil {
+		return err
+	}
+	mf.ApplyUpdate(req.Properties)
+	event := eventlog.NewPostUpdated(mf)
 	return s.el.Append(event)
 }
 
@@ -375,20 +450,14 @@ func parseCurrentYear(selectedYear string, years []Year) Year {
 }
 
 type QueryPostListResponse struct {
-	PostList []mf2.MicroFormatView
+	PostList []mf2.MicroFormat
 	AfterKey string
 }
 
 func (s Server) QueryPostList(limit int, after string) (*QueryPostListResponse, error) {
 	pl := s.selecta.SelectPostList(limit, after)
-	postList := []mf2.MicroFormatView{}
-
-	for _, mf2 := range pl.Items {
-		postList = append(postList, mf2.ToView())
-	}
-
 	return &QueryPostListResponse{
-		PostList: postList,
+		PostList: pl.Items,
 		AfterKey: pl.Paging.After,
 	}, nil
 }
