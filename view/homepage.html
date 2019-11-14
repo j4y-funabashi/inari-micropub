@@ -29,35 +29,39 @@
     </div>
   </div>
 
-  <div>
-    {{ range .PostList }}
-    <div class="card">
-      {{ with .Photo }} {{ range . }}
-      <div class="card-image">
-        <figure class="image is-square">
-          <img
-            src="https://images.weserv.nl/?w=540&h=540&t=square&a=entropy&url={{ . }}"
-          />
-        </figure>
-      </div>
-      {{ end }} {{ end }}
-      <div class="card-content">
-        <div class="content">
-          {{ with .Content }}
-          <p class="is-marginless">{{ . }}</p>
-          {{ end }} {{ with .Location }}
-          <p class="is-marginless has-text-grey-light">{{ . }}</p>
-          {{ end }}
-          <time
-            class="dt-published has-text-grey-light"
-            datetime="{{ .Published }}"
-          >
-            {{ .Published }}
-          </time>
+  <div class="columns">
+    <!-- post list -->
+    <div class="column">
+      {{ range .PostList }}
+      <div class="card">
+        {{ with .Photo }} {{ range . }}
+        <div class="card-image">
+          <figure class="image">
+            <img src="https://images.weserv.nl/?w=640&url={{ . }}" />
+          </figure>
+        </div>
+        {{ end }} {{ end }}
+        <div class="card-content">
+          <div class="content">
+            {{ with .Content }}
+            <p class="is-marginless">{{ . }}</p>
+            {{ end }} {{ with .Location }}
+            <p class="is-marginless has-text-grey-light">{{ . }}</p>
+            {{ end }}
+            <time
+              class="dt-published has-text-grey-light"
+              datetime="{{ .Published }}"
+            >
+              {{ .Published }}
+            </time>
+          </div>
         </div>
       </div>
+      {{ end }}
     </div>
-    {{ end }}
+
+    <!-- archive nav -->
+    <div class="column"></div>
   </div>
 
   {{ with .AfterKey }}
