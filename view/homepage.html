@@ -1,23 +1,23 @@
 {{ define "content" }}
 
-<div class="container">
-  <div class="h-card">
-    <div class="media">
-      <div class="media-left">
+<!-- my hcard -->
+<div class="mw9 center ph3-ns">
+  <div class="cf ph2-ns">
+    <div class="fl w-100 w-50-ns pa2">
+      <div class="bg-white pv4 tr">
         <img
           class="u-photo"
-          src="https://j4y.co/profile_pic.jpeg"
-          width="45px"
-          height="45px"
+          src="https://images.weserv.nl/?w=150&url=https://j4y.co/profile_pic.jpeg"
         />
       </div>
-      <div class="media-content">
+    </div>
+    <div class="fl w-100 w-50-ns pa2">
+      <div class="bg-white pv4">
+        <a class="p-name u-url u-uid" href="https://jay.funabashi.co.uk/"
+          >Jay Funabashi</a
+        >
         <ul>
-          <li>
-            <a class="p-name u-url u-uid" href="https://jay.funabashi.co.uk/"
-              >Jay Funabashi</a
-            >
-          </li>
+          <li></li>
           <li>
             <a class="u-email" href="mailto:me@j4y.co" rel="me">Email</a>
           </li>
@@ -28,48 +28,91 @@
       </div>
     </div>
   </div>
+</div>
 
-  <div class="columns">
-    <!-- post list -->
-    <div class="column">
-      {{ range .PostList }}
-      <div class="card">
-        {{ with .Photo }} {{ range . }}
-        <div class="card-image">
-          <figure class="image">
-            <img src="https://images.weserv.nl/?w=640&url={{ . }}" />
-          </figure>
+<div class="mw9 center ph3-ns">
+  <div class="cf ph2-ns">
+    <!-- col1 -->
+    <div class="fl w-100 w-50-ns">
+      <div class="bg-white pv4">
+        <!-- post list -->
+        {{ range .PostList }} {{ template "post" . }} {{ end }}
+        <!-- next nav -->
+        {{ with .AfterKey }}
+        <div>
+          <a href="?after={{ . }}">Next Page</a>
         </div>
-        {{ end }} {{ end }}
-        <div class="card-content">
-          <div class="content">
-            {{ with .Content }}
-            <p class="is-marginless">{{ . }}</p>
-            {{ end }} {{ with .Location }}
-            <p class="is-marginless has-text-grey-light">{{ . }}</p>
-            {{ end }}
-            <time
-              class="dt-published has-text-grey-light"
-              datetime="{{ .Published }}"
-            >
-              {{ .Published }}
-            </time>
-          </div>
-        </div>
+        {{ end }}
       </div>
-      {{ end }}
-
-      <!-- next nav -->
-      {{ with .AfterKey }}
-      <div>
-        <a class="button is-fullwidth" href="?after={{ . }}">Next Page</a>
-      </div>
-      {{ end }}
     </div>
-
-    <!-- archive nav -->
-    <div class="column"></div>
+    <!-- col2 -->
+    <div class="fl w-100 w-50-ns pa2">
+      <div class="bg-white pv4">
+        {{ template "archivelist" . }}
+      </div>
+    </div>
   </div>
 </div>
 
+{{ end }}
+
+<!-- post -->
+{{ define "post" }}
+<div class="card">
+  {{ with .Photo }} {{ range . }}
+  <div class="card-image">
+    <figure class="image">
+      <img src="https://images.weserv.nl/?w=640&url={{ . }}" />
+    </figure>
+  </div>
+  {{ end }} {{ end }}
+  <div class="card-content">
+    <div class="content">
+      {{ with .Content }}
+      <p class="is-marginless">{{ . }}</p>
+      {{ end }} {{ with .Location }}
+      <p class="is-marginless has-text-grey-light">{{ . }}</p>
+      {{ end }}
+      <time
+        class="dt-published has-text-grey-light"
+        datetime="{{ .Published }}"
+      >
+        {{ .Published }}
+      </time>
+    </div>
+  </div>
+</div>
+{{ end }}
+
+<!-- archivelist -->
+{{ define "archivelist" }}
+<h1>2019</h1>
+<ul>
+  <li><a href="#">Nov</a></li>
+  <li><a href="#">Oct</a></li>
+  <li><a href="#">Sep</a></li>
+  <li><a href="#">Aug</a></li>
+  <li><a href="#">Jul</a></li>
+  <li><a href="#">Jun</a></li>
+  <li><a href="#">May</a></li>
+  <li><a href="#">Apr</a></li>
+  <li><a href="#">Mar</a></li>
+  <li><a href="#">Feb</a></li>
+  <li><a href="#">Jan</a></li>
+</ul>
+<h1>2018</h1>
+<ul>
+  <li><a href="#">Dec</a></li>
+  <li><a href="#">Nov</a></li>
+  <li><a href="#">Oct</a></li>
+  <li><a href="#">Sep</a></li>
+  <li><a href="#">Aug</a></li>
+  <li><a href="#">Jul</a></li>
+  <li><a href="#">Jun</a></li>
+  <li><a href="#">May</a></li>
+  <li><a href="#">Apr</a></li>
+  <li><a href="#">Mar</a></li>
+  <li><a href="#">Feb</a></li>
+  <li><a href="#">Jan</a></li>
+</ul>
 {{ end }}

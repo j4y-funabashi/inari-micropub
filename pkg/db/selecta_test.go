@@ -3,7 +3,6 @@ package db_test
 import (
 	"database/sql"
 	"os"
-	"strings"
 	"testing"
 
 	"github.com/j4y_funabashi/inari-micropub/pkg/db"
@@ -262,38 +261,46 @@ func buildTestMpServer(t *testing.T) micropub.Server {
 	return mpserver
 }
 
-func TestCreateThenQuery(t *testing.T) {
-	if os.Getenv("INTEGRATION_TEST") != "1" {
-		t.SkipNow()
-	}
-
-	// ARRANGE
-	is := is.NewRelaxed(t)
-
-	mpserver := buildTestMpServer(t)
-
-	baseURL := ""
-	contentType := "application/json"
-	body := `{"properties": {"uid": ["test123"], "published": ["2019-01-28T13:13:13+00:00"], "photo": ["testphoto1.jpg"]}}`
-	tokenRes := indieauth.TokenResponse{}
-
-	// ACT
-	createResponse, err := mpserver.CreatePost(
-		baseURL,
-		contentType,
-		body,
-		tokenRes,
-	)
+func buildEventLog(t *testing.T) eventlog.EventLog {
+	s3KeyPrefix := "test"
+	s3Bucket := "test.events"
+	s3Endpoint := "localstack:4572"
+	s3Client, err := s3.NewClient(s3Endpoint)
 	if err != nil {
-		t.Errorf("failed to create post: %s", err.Error())
+		t.Fatal("failed to create s3 client")
 	}
 
-	byURLResult := mpserver.QuerySourceByURL(createResponse.Location)
-	is.Equal(
-		strings.TrimSpace(byURLResult.Body),
-		`{"type":["h-entry"],"properties":{"author":[""],"photo":["testphoto1.jpg"],"published":["2019-01-28T13:13:13+00:00"],"uid":["test123"],"url":["/p/test123"]}}`,
+	logger := logrus.New()
+	sqlClient, err := db.OpenDB()
+	if err != nil {
+		t.Fatal("failed to open DB")
+	}
+
+	return eventlog.NewEventLog(
+		s3KeyPrefix,
+		s3Bucket,
+		s3Client,
+		sqlClient,
+		logger,
 	)
 }
+
+// func TestCreateThenQuery(t *testing.T) {
+// 	if os.Getenv("INTEGRATION_TEST") != "1" {
+// 		t.SkipNow()
+// 	}
+
+// 	// ARRANGE
+// 	is := is.NewRelaxed(t)
+// 	mpserver := buildTestMpServer(t)
+
+// 	// ACT
+// 	byURLResult := mpserver.QuerySourceByURL(createResponse.Location)
+// 	is.Equal(
+// 		strings.TrimSpace(byURLResult.Body),
+// 		`{"type":["h-entry"],"properties":{"author":[""],"photo":["testphoto1.jpg"],"published":["2019-01-28T13:13:13+00:00"],"uid":["test123"],"url":["/p/test123"]}}`,
+// 	)
+// }
 
 func TestSelectMediaList1(t *testing.T) {
 	if os.Getenv("INTEGRATION_TEST") != "1" {
@@ -312,5 +319,23 @@ func TestSelectMediaList1(t *testing.T) {
 	// ACT
 	result := selecta.SelectMediaYearList()
 	t.Logf("%+v", result)
-	is.Equal("HORSE!", "BADGER!")
+
+	monthsResult, err := selecta.SelectMediaMonthList("2018")
+	if err != nil {
+		t.Errorf("failed to select media month: %s", err.Error())
+	}
+	t.Logf("%+v", monthsResult)
+
+	daysResult, err := selecta.SelectMediaDayList("2018", "01")
+	if err != nil {
+		t.Errorf("failed to select media month: %s", err.Error())
+	}
+	t.Logf("%+v", daysResult)
+
+	dayResult, err := selecta.SelectMediaDay("2018", "01", "28")
+	if err != nil {
+		t.Errorf("failed to select media month: %s", err.Error())
+	}
+	t.Logf("%+v", dayResult)
+	is.Equal("", dayResult)
 }

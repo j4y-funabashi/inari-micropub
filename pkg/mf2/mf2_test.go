@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/j4y_funabashi/inari-micropub/pkg/mf2"
+	"github.com/matryer/is"
 )
 
 var defaultAuthor = "https://j4y.co/"
@@ -124,6 +125,100 @@ func TestFeeds(t *testing.T) {
 	}
 }
 
+func TestApplyUpdate(t *testing.T) {
+	var tests = []struct {
+		name     string
+		updates  map[string][]interface{}
+		mf       mf2.MicroFormat
+		expected mf2.MicroFormat
+	}{
+		{
+			name: "it updates simple lists of properties",
+			updates: map[string][]interface{}{
+				"content": []interface{}{
+					"cheese",
+					"horse",
+				},
+			},
+			mf: mf2.MicroFormat{
+				Properties: map[string][]interface{}{
+					"content": []interface{}{
+						"hellchicken",
+					},
+					"uid": []interface{}{
+						"123",
+					},
+				},
+			},
+			expected: mf2.MicroFormat{
+				Properties: map[string][]interface{}{
+					"content": []interface{}{
+						"cheese",
+						"horse",
+					},
+					"uid": []interface{}{
+						"123",
+					},
+				},
+			},
+		},
+		{
+			name: "it updates nested structures",
+			updates: map[string][]interface{}{
+				"location": []interface{}{
+					map[string]interface{}{
+						"type": []interface{}{"h-card"},
+						"properties": map[string]interface{}{
+							"city": []interface{}{
+								"leeds",
+							},
+						},
+					},
+				},
+			},
+			mf: mf2.MicroFormat{
+				Properties: map[string][]interface{}{
+					"content": []interface{}{
+						"hellchicken",
+					},
+					"uid": []interface{}{
+						"123",
+					},
+				},
+			},
+			expected: mf2.MicroFormat{
+				Properties: map[string][]interface{}{
+					"content": []interface{}{
+						"hellchicken",
+					},
+					"uid": []interface{}{
+						"123",
+					},
+					"location": []interface{}{
+						map[string]interface{}{
+							"type": []interface{}{"h-card"},
+							"properties": map[string]interface{}{
+								"city": []interface{}{
+									"leeds",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		is := is.NewRelaxed(t)
+		tt := tt
+		t.Run(tt.name, func(t *testing.T) {
+			tt.mf.ApplyUpdate(tt.updates)
+			is.Equal(tt.mf, tt.expected)
+		})
+	}
+}
+
 func TestConvertingMicroFormatToViewModel(t *testing.T) {
 
 	p := make(map[string][]interface{})
@@ -150,7 +245,17 @@ func TestConvertingMicroFormatToViewModel(t *testing.T) {
 	p["syndication"] = append(p["syndication"], "test-syndication2")
 	p["in-reply-to"] = append(p["in-reply-to"], "test-in-reply-to1")
 	p["in-reply-to"] = append(p["in-reply-to"], "test-in-reply-to2")
-	p["location"] = append(p["location"], "test-location")
+
+	mfLoc := mf2.MicroFormat{Type: []string{"h-adr"}}
+	pLoc := make(map[string][]interface{})
+	pLoc["latitude"] = append(pLoc["latitude"], "6.66")
+	pLoc["longitude"] = append(pLoc["longitude"], "7.77")
+	pLoc["locality"] = append(pLoc["locality"], "Leeds")
+	pLoc["region"] = append(pLoc["region"], "West Yorkshire")
+	pLoc["country"] = append(pLoc["country-name"], "UK")
+	mfLoc.Properties = pLoc
+	p["location"] = append(p["location"], mfLoc)
+
 	p["like-of"] = append(p["like-of"], "test-like-of")
 	p["repost-of"] = append(p["repost-of"], "test-repost-of")
 	p["bookmark-of"] = append(p["bookmark-of"], "test-bookmark-of")
@@ -165,8 +270,8 @@ func TestConvertingMicroFormatToViewModel(t *testing.T) {
 	if res.Published != "2018-01-28T10:00:00Z" {
 		t.Fatalf("jf2 published should be 2018-01-28 10:00:00 +0000 UTC got '%s'", res.Published)
 	}
-	if res.Location != "test-location" {
-		t.Fatalf("jf2 location should be test-location got '%s'", res.Location)
+	if res.Location != "Leeds, West Yorkshire, UK" {
+		t.Fatalf("jf2 location should be 'Leeds, West Yorkshire, UK' got '%s'", res.Location)
 	}
 	if res.Name != "test-name" {
 		t.Fatalf("jf2 name should be test-name got '%s'", res.Name)
@@ -216,14 +321,6 @@ func TestRenderHtml(t *testing.T) {
 	t.SkipNow()
 	pubtime := "2018-01-28T10:00:00Z"
 
-	child1 := mf2.MicroFormatView{
-		Type:      "entry",
-		Uid:       "test--uid",
-		Url:       "/p/test--uid",
-		Published: pubtime,
-		Author:    "https://j4y.co",
-		Photo:     []string{"test--childphoto1", "test--photo2"},
-	}
 	SUT := mf2.MicroFormatView{
 		Type:       "entry",
 		Uid:        "test--uid",
@@ -239,7 +336,6 @@ func TestRenderHtml(t *testing.T) {
 		Location:   "test--location",
 		Photo:      []string{"test--photo1", "test--photo2"},
 		Category:   []string{"test--category1", "test--category2"},
-		Children:   []mf2.MicroFormatView{child1},
 	}
 	var b bytes.Buffer
 	err := SUT.Render(&b, "img-proxy")
@@ -252,38 +348,65 @@ func TestRenderHtml(t *testing.T) {
 	}
 }
 
-func TestSortingChildren(t *testing.T) {
-	pubtime := "2018-01-28T10:00:00Z"
+func TestChildPropertiesCanBeMF(t *testing.T) {
+	tt := []struct {
+		inputJSON string
+	}{
+		{
+			inputJSON: `{
+			"type": [
+				"h-entry"
+			],
+			"properties": {
+				"author": [
+					"https://jay.funabashi.co.uk/"
+				],
+				"location": [
+					{
+						"properties": {
+							"country-name": [
+								"United Kingdom"
+							],
+							"latitude": [
+								53.800755
+							],
+							"locality": [
+								"Leeds"
+							],
+							"longitude": [
+								-1.549077
+							],
+							"region": [
+								"West Yorkshire"
+							]
+						},
+						"type": [
+							"h-adr"
+						]
+					}
+				],
+				"photo": [
+					"https://media.funabashi.co.uk/2019/b8ea8e3ce769f2a54454d3818f90bbbf.jpg"
+				],
+				"published": [
+					"2018-01-28T00:00:00Z"
+				],
+				"uid": [
+					"9a9ecd17-2fcf-4d91-97e2-09e2cd9e06b5"
+				],
+				"url": [
+					"https://jay.funabashi.co.uk/p/9a9ecd17-2fcf-4d91-97e2-09e2cd9e06b5"
+				]
+			}
+		}
+`,
+		},
+	}
 
-	child1 := mf2.MicroFormatView{
-		Type:      "entry",
-		Uid:       "test--uid",
-		Published: pubtime,
-	}
-	child2 := mf2.MicroFormatView{
-		Type:      "entry",
-		Uid:       "test--uid",
-		Published: "2018-01-28T11:00:00Z",
-	}
-	child3 := mf2.MicroFormatView{
-		Type:      "entry",
-		Uid:       "test--uid",
-		Published: "2018-01-28T12:00:00Z",
-	}
-	SUT := mf2.MicroFormatView{
-		Type:     "entry",
-		Uid:      "test--uid",
-		Children: []mf2.MicroFormatView{child3, child1, child2},
-	}
-	SUT.SortChildren()
-
-	expected := mf2.MicroFormatView{
-		Type:     "entry",
-		Uid:      "test--uid",
-		Children: []mf2.MicroFormatView{child3, child2, child1},
-	}
-	if !reflect.DeepEqual(expected, SUT) {
-		t.Fatalf("expected %+v, got %+v", expected, SUT)
+	for _, tc := range tt {
+		result, _ := mf2.MfFromJson(tc.inputJSON)
+		t.Errorf("HORSE!!!! %+v", result.Properties["location"])
+		t.Errorf("TOVIEW LOCATION!!!! %+v", result.ToView().Location)
 	}
 }
 
@@ -298,8 +421,8 @@ func TestCreatingMicroformatFromJSON(t *testing.T) {
 			expectedMF2: mf2.MicroFormat{Type: []string{"h-entry"}, Properties: createProperty("content", map[string]interface{}{"html": "<p>This post has <b>bold</b> and <i>italic</i> text.</p>"})},
 		},
 		{
-			inputJSON:   `{"type": ["h-entry"], "properties": {"content": ["hell"]}, "children": ["https://yoursite.com/photopost1", "https://yoursite.com/photopost2"]}`,
-			expectedMF2: mf2.MicroFormat{Type: []string{"h-entry"}, Properties: createProperty("content", "hell"), Children: []interface{}{"https://yoursite.com/photopost1", "https://yoursite.com/photopost2"}},
+			inputJSON:   `{"type": ["h-entry"], "properties": {"content": ["hell"]}}`,
+			expectedMF2: mf2.MicroFormat{Type: []string{"h-entry"}, Properties: createProperty("content", "hell")},
 		},
 	}
 
