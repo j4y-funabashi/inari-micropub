@@ -11,10 +11,15 @@ services:
             S3_EVENTS_KEY: "jay" ## prefix for event files
             S3_EVENTS_BUCKET: "events.funabashi.co.uk"
             S3_MEDIA_BUCKET: "media.funabashi.co.uk"
-            BASE_URL: "http://mpserver/" ## used when saving posts + events metadata
+            BASE_URL: "https://jay.funabashi.co.uk/" ## used when saving posts + events metadata
             SITE_URL: "https://jay.funabashi.co.uk/"
             DATABASE_URL: "postgresql://postgres:example@db:5432?sslmode=disable"
             PORT: 8091
+            ADMIN_PASSWORD: $ADMIN_PASSWORD
+            GEO_API_KEY: $GEO_API_KEY
+            GEO_API_URL: "https://maps.googleapis.com/maps/api/geocode/json"
+            VENUE_API_KEY: $VENUE_API_KEY
+            VENUE_CLIENT_ID: $VENUE_CLIENT_ID
         depends_on:
           - db
           - localstack
