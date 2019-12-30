@@ -74,7 +74,8 @@ func TestParseMediaGallery(t *testing.T) {
 				Media: [][]view.Media{
 					[]view.Media{
 						view.Media{
-							URL: "test1",
+							URL:      "test1",
+							DateTime: now.Format("Mon Jan 02, 2006"),
 						},
 					},
 				},
