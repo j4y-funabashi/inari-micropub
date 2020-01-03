@@ -84,7 +84,12 @@ func main() {
 	)
 	presenter := view.NewPresenter()
 	reqParser := web.NewParser()
-	webServer := web.NewServer(inari, logger, presenter, reqParser)
+	webServer := web.NewServer(
+		inari,
+		logger,
+		presenter,
+		reqParser,
+	)
 
 	// routing
 	router := mux.NewRouter()

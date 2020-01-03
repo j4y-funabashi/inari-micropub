@@ -206,16 +206,30 @@ func TestSessionToMf2(t *testing.T) {
 	now := time.Now()
 
 	var tests = []struct {
-		name string
-		sess app.SessionData
+		name     string
+		sess     app.SessionData
+		expected mf2.MicroFormat
 	}{
 		{
 			name: "empty session",
-			sess: app.SessionData{},
+			sess: app.SessionData{
+				UID:       "test-uuid-123",
+				Published: &now,
+			},
+			expected: mf2.MicroFormat{
+				Type: []string{"h-entry"},
+				Properties: map[string][]interface{}{
+					"published": []interface{}{now.Format(time.RFC3339)},
+					"uid":       []interface{}{"test-uuid-123"},
+					"url":       []interface{}{"/p/test-uuid-123"},
+					"author":    []interface{}{""},
+				},
+			},
 		},
 		{
 			name: "full valid session",
 			sess: app.SessionData{
+				UID: "test-uuid-1234",
 				Media: []app.Media{
 					app.Media{
 						URL: "https://test1.jpg",
@@ -225,6 +239,7 @@ func TestSessionToMf2(t *testing.T) {
 					},
 				},
 				Location: app.Location{
+					Name:     "Nandos",
 					Lat:      6.66,
 					Lng:      5.55,
 					Locality: "meanwood",
@@ -234,12 +249,37 @@ func TestSessionToMf2(t *testing.T) {
 				Published: &now,
 				Content:   "hello test",
 			},
+			expected: mf2.MicroFormat{
+				Type: []string{"h-entry"},
+				Properties: map[string][]interface{}{
+					"published": []interface{}{now.Format(time.RFC3339)},
+					"uid":       []interface{}{"test-uuid-1234"},
+					"url":       []interface{}{"/p/test-uuid-1234"},
+					"author":    []interface{}{""},
+					"content":   []interface{}{"hello test"},
+					"photo":     []interface{}{"https://test1.jpg", "https://test2.jpg"},
+					"location": []interface{}{
+						mf2.MicroFormat{
+							Type: []string{"h-card"},
+							Properties: map[string][]interface{}{
+								"name":         []interface{}{"Nandos"},
+								"latitude":     []interface{}{6.66},
+								"longitude":    []interface{}{5.55},
+								"locality":     []interface{}{"meanwood"},
+								"region":       []interface{}{"West Yorkshire"},
+								"country-name": []interface{}{"uk"},
+							},
+						},
+					},
+				},
+			},
 		},
 	}
 
 	for _, tt := range tests {
+		is := is.NewRelaxed(t)
 		result := tt.sess.ToMf2()
-		t.Errorf("%+v", result)
+		is.Equal(result, tt.expected)
 	}
 }
 

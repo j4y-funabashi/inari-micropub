@@ -157,6 +157,7 @@ type ShowMediaDetailResponse struct {
 
 type SessionData struct {
 	Token              string     `json:"token"`
+	UID                string     `json:uid`
 	Media              []Media    `json:"media"`
 	Location           Location   `json:"location"`
 	SuggestedLocations []Location `json:"suggested_locations"`
@@ -181,12 +182,17 @@ func (s SessionData) CookieValue(maxAge int) string {
 }
 
 func (s SessionData) ToMf2() mf2.MicroFormat {
-	uid := uuid.NewV4()
 	mfType := []string{"h-entry"}
 	now := time.Now()
 
 	props := make(map[string][]interface{})
-	props["uid"] = append(props["uid"], uid.String())
+
+	// uid
+	if s.UID == "" {
+		uid := uuid.NewV4()
+		s.UID = uid.String()
+	}
+	props["uid"] = append(props["uid"], s.UID)
 
 	// media
 	for _, m := range s.Media {
@@ -210,13 +216,13 @@ func (s SessionData) ToMf2() mf2.MicroFormat {
 	}
 
 	baseURL := os.Getenv("SITE_URL")
-	postURL := strings.TrimRight(baseURL, "/") + "/p/" + uid.String()
+	postURL := strings.TrimRight(baseURL, "/") + "/p/" + s.UID
 
 	mf := mf2.MicroFormat{
 		Type:       mfType,
 		Properties: props,
 	}
-	mf.SetDefaults(baseURL, uid.String(), postURL)
+	mf.SetDefaults(baseURL, s.UID, postURL)
 
 	return mf
 }
