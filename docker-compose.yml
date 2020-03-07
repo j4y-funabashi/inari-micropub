@@ -1,11 +1,10 @@
 version: "2"
 
 services:
-    tests:
+    app:
         build:
             context: ./
         environment:
-            INTEGRATION_TEST: "1"
             TOKEN_ENDPOINT: "http://token_mock" ## used to validate tokens
             MEDIA_ENDPOINT: "http://mpserver/media" ## used for q=config
             S3_ENDPOINT: "http://localstack:4572" ## DEV
@@ -15,15 +14,20 @@ services:
             BASE_URL: "http://mpserver/" ## used when saving posts + events metadata
             SITE_URL: "https://jay.funabashi.co.uk/"
             DATABASE_URL: "postgresql://postgres:example@db:5432?sslmode=disable"
+            PORT: 3040
         depends_on:
           - db
           - localstack
+          - token_mock
         env_file: .env
-        entrypoint: ["./scripts/run_tests.sh"]
+        entrypoint: ["./scripts/start_app.sh"]
+        ports:
+            - 3040:3040
 
     db:
         image: postgres
-        restart: always
+        ports:
+            - 5432:5432
         environment:
             POSTGRES_PASSWORD: example
 
@@ -36,3 +40,7 @@ services:
             USE_SSL: "false"
         ports:
             - 4572:4572
+
+    token_mock:
+        build:
+            context: ./mocks/token_endpoint/

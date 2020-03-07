@@ -1,11 +1,32 @@
 #!/usr/bin/env bash
-set -eux
+set -eu
+
+docker-compose down -v
+docker-compose up --build -d app
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
 
-$DIR/wait-for-it.sh db:5432 -- echo 'HORSE!!! Database is up'
-$DIR/wait-for-it.sh localstack:4572 -- echo 'HORSE!!! localstack.s3 is up'
+wait-for-url() {
+    echo "Waiting for ${1}..."
+    timeout -s TERM 45 bash -c \
+    'while [[ "$(curl -s -o /dev/null -L -w ''%{http_code}'' ${0})" != "200" ]];
+    do
+        sleep 1;
+    done' "${1}"
+    echo "HORSE!! ${1} is up"
+}
 
-go run ./cmd/inari-test-data/main.go
+HOST="http://localhost:3040"
+wait-for-url ${HOST}
 
-go test ./pkg/...
+echo "----------"
+echo "RUNNING TESTS"
+echo "----------"
+
+set +e
+go test ./test/...
+exit_code="${?}"
+set -e
+
+echo "tests exited ${exit_code}"
+exit "${exit_code}"

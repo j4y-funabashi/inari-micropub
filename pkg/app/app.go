@@ -248,7 +248,11 @@ func (s Server) VerifyAccessToken(
 	// build request
 	req, err := http.NewRequest("GET", tokenEndpoint, nil)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to create verify token")
+		s.logger.
+			WithError(err).
+			WithField("endpoint", tokenEndpoint).
+			WithField("token", bearerToken).
+			Error("failed to build verify token request")
 		return TokenResponse{}, err
 	}
 	bearerToken = "Bearer " + strings.TrimSpace(strings.Replace(bearerToken, "Bearer", "", -1))
@@ -259,7 +263,11 @@ func (s Server) VerifyAccessToken(
 	c := &http.Client{}
 	resp, err := c.Do(req)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to verify token")
+		s.logger.
+			WithError(err).
+			WithField("endpoint", tokenEndpoint).
+			WithField("token", bearerToken).
+			Error("failed to send verify token request")
 		return TokenResponse{}, err
 	}
 
@@ -269,7 +277,11 @@ func (s Server) VerifyAccessToken(
 	buf.ReadFrom(resp.Body)
 	err = json.Unmarshal(buf.Bytes(), &tokenRes)
 	if err != nil {
-		s.logger.WithError(err).Error("failed to unmarshal verify token response")
+		s.logger.
+			WithField("endpoint", tokenEndpoint).
+			WithField("token", bearerToken).
+			WithError(err).
+			Error("failed to unmarshal verify token response")
 		return TokenResponse{}, err
 	}
 	return tokenRes, nil
