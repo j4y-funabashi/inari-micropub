@@ -183,11 +183,12 @@ func (mf MicroFormat) ToView() MicroFormatView {
 	out.Location = mf.parseLocation()
 	out.Author = mf.getFirstString("author")
 	out.Published = mf.parsePublishedValue()
+
 	out.Updated = mf.getFirstString("updated")
+	out.Rsvp = mf.getFirstString("rsvp")
 	out.LikeOf = mf.getStringSlice("like-of")
 	out.BookmarkOf = mf.getStringSlice("bookmark-of")
 	out.RepostOf = mf.getStringSlice("repost-of")
-	out.Rsvp = mf.getFirstString("rsvp")
 	out.Syndication = mf.getStringSlice("syndication")
 	out.InReplyTo = mf.getStringSlice("in-reply-to")
 	out.Comment = mf.getStringSlice("comment")

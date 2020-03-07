@@ -144,7 +144,8 @@ func (s Server) handleHomepage() http.HandlerFunc {
 			return
 		}
 
-		// view.render
+		// viewModel := s.presenter.ParseHomepage(postList)
+		// err := renderHomepage(viewModel, w)
 		outBuf := new(bytes.Buffer)
 		err = renderHomepage(outBuf, postList.PostList, postList.AfterKey)
 		if err != nil {
@@ -174,6 +175,12 @@ func (s Server) handleMediaDetail() http.HandlerFunc {
 		if err != nil {
 			s.logger.WithError(err).Error("failed to render composer")
 		}
+	}
+}
+
+func (s Server) handleArchive() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		s.App.ShowArchive()
 	}
 }
 

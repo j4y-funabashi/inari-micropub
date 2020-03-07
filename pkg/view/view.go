@@ -138,7 +138,10 @@ func (pres Presenter) ParseMediaGallery(mediaRes app.ShowMediaResponse) MediaGal
 
 func parseCurrentDay(mediaRes app.ShowMediaResponse) ProgressLink {
 
-	now, _ := time.Parse("2006-1-2", mediaRes.CurrentYear.Year+"-"+mediaRes.CurrentMonth.Month+"-"+mediaRes.CurrentDay.Day)
+	now, _ := time.Parse(
+		"2006-1-2",
+		mediaRes.CurrentYear.Year+"-"+mediaRes.CurrentMonth.Month+"-"+mediaRes.CurrentDay.Day,
+	)
 	day := ProgressLink{
 		Name:  now.Format("Monday, 2 Jan 2006"),
 		Value: mediaRes.CurrentDay.PublishedCount,

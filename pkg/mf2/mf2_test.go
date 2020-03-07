@@ -246,14 +246,15 @@ func TestConvertingMicroFormatToViewModel(t *testing.T) {
 	p["in-reply-to"] = append(p["in-reply-to"], "test-in-reply-to1")
 	p["in-reply-to"] = append(p["in-reply-to"], "test-in-reply-to2")
 
-	mfLoc := mf2.MicroFormat{Type: []string{"h-adr"}}
-	pLoc := make(map[string][]interface{})
-	pLoc["latitude"] = append(pLoc["latitude"], "6.66")
-	pLoc["longitude"] = append(pLoc["longitude"], "7.77")
-	pLoc["locality"] = append(pLoc["locality"], "Leeds")
-	pLoc["region"] = append(pLoc["region"], "West Yorkshire")
-	pLoc["country"] = append(pLoc["country-name"], "UK")
-	mfLoc.Properties = pLoc
+	mfLoc := make(map[string]interface{})
+	mfLoc["type"] = []interface{}{"h-adr"}
+	pLoc := make(map[string]interface{})
+	pLoc["locality"] = []interface{}{"Leeds"}
+	pLoc["region"] = []interface{}{"West Yorkshire"}
+	pLoc["country-name"] = []interface{}{"UK"}
+	// pLoc["latitude"] = []interface{}{"6.66"}
+	// pLoc["longitude"] = append(pLoc["longitude"], "7.77")
+	mfLoc["properties"] = pLoc
 	p["location"] = append(p["location"], mfLoc)
 
 	p["like-of"] = append(p["like-of"], "test-like-of")
@@ -348,65 +349,99 @@ func TestRenderHtml(t *testing.T) {
 	}
 }
 
-func TestChildPropertiesCanBeMF(t *testing.T) {
+func TestMf2FromJSONToView(t *testing.T) {
 	tt := []struct {
+		name      string
 		inputJSON string
+		expected  mf2.MicroFormatView
 	}{
 		{
+			name: "minimal valid h-entry",
 			inputJSON: `{
-			"type": [
-				"h-entry"
-			],
+			"type": ["h-entry"],
 			"properties": {
-				"author": [
-					"https://jay.funabashi.co.uk/"
-				],
+				"published": ["2018-01-28T00:00:00Z"]
+				}
+			}`,
+			expected: mf2.MicroFormatView{
+				Type:      "entry",
+				Published: "2018-01-28T00:00:00Z",
+				Archive:   "201801",
+			},
+		},
+		{
+			name: "full valid h-entry",
+			inputJSON: `{
+			"type": ["h-entry"],
+			"properties": {
+				"uid": ["9a9ecd17-2fcf-4d91-97e2-09e2cd9e06b5"],
+				"url": ["https://example.com/test1"],
+				"name": ["test-name"],
+				"summary": ["test-summary"],
+				"content": ["test-content"],
+				"category": ["tag1", "tag2"],
+				"photo": ["https://media.example.com/test1.jpg", "https://media.example.com/test2.jpg"],
+				"video": ["https://media.example.com/test1.mp4", "https://media.example.com/test2.mp4"],
 				"location": [
 					{
 						"properties": {
-							"country-name": [
-								"United Kingdom"
-							],
-							"latitude": [
-								53.800755
-							],
-							"locality": [
-								"Leeds"
-							],
-							"longitude": [
-								-1.549077
-							],
-							"region": [
-								"West Yorkshire"
-							]
+							"country-name": ["United Kingdom"],
+							"latitude": [53.800755],
+							"locality": ["Leeds"],
+							"longitude": [-1.549077],
+							"region": ["West Yorkshire"]
 						},
-						"type": [
-							"h-adr"
-						]
+						"type": ["h-adr"]
 					}
 				],
-				"photo": [
-					"https://media.funabashi.co.uk/2019/b8ea8e3ce769f2a54454d3818f90bbbf.jpg"
-				],
-				"published": [
-					"2018-01-28T00:00:00Z"
-				],
-				"uid": [
-					"9a9ecd17-2fcf-4d91-97e2-09e2cd9e06b5"
-				],
-				"url": [
-					"https://jay.funabashi.co.uk/p/9a9ecd17-2fcf-4d91-97e2-09e2cd9e06b5"
-				]
-			}
-		}
-`,
+				"author": ["https://jay.funabashi.co.uk/"],
+				"published": ["2018-01-28T00:00:00Z"],
+				"updated": ["2018-01-29T00:00:00Z"],
+				"rsvp": ["https://example.com/rsvp1"],
+				"like-of": ["https://example.com/like1"],
+				"bookmark-of": ["https://example.com/bookmark1"],
+				"repost-of": ["https://example.com/repost1"],
+				"syndication": ["https://example.com/syndicate1"],
+				"in-reply-to": ["https://example.com/reply1"],
+				"comment": ["https://example.com/comment1"]
+				}
+			}`,
+			expected: mf2.MicroFormatView{
+				Type:        "entry",
+				Uid:         "9a9ecd17-2fcf-4d91-97e2-09e2cd9e06b5",
+				Url:         "https://example.com/test1",
+				Name:        "test-name",
+				Summary:     "test-summary",
+				Content:     "test-content",
+				Category:    []string{"tag1", "tag2"},
+				Photo:       []string{"https://media.example.com/test1.jpg", "https://media.example.com/test2.jpg"},
+				Video:       []string{"https://media.example.com/test1.mp4", "https://media.example.com/test2.mp4"},
+				Location:    "Leeds, West Yorkshire, United Kingdom",
+				Author:      "https://jay.funabashi.co.uk/",
+				Published:   "2018-01-28T00:00:00Z",
+				Updated:     "2018-01-29T00:00:00Z",
+				Rsvp:        "https://example.com/rsvp1",
+				LikeOf:      []string{"https://example.com/like1"},
+				BookmarkOf:  []string{"https://example.com/bookmark1"},
+				RepostOf:    []string{"https://example.com/repost1"},
+				Syndication: []string{"https://example.com/syndicate1"},
+				InReplyTo:   []string{"https://example.com/reply1"},
+				Comment:     []string{"https://example.com/comment1"},
+				Archive:     "201801",
+			},
 		},
 	}
 
 	for _, tc := range tt {
-		result, _ := mf2.MfFromJson(tc.inputJSON)
-		t.Errorf("HORSE!!!! %+v", result.Properties["location"])
-		t.Errorf("TOVIEW LOCATION!!!! %+v", result.ToView().Location)
+		is := is.NewRelaxed(t)
+		result, err := mf2.MfFromJson(tc.inputJSON)
+		if err != nil {
+			t.Logf("ER ::: %s", err.Error())
+		}
+		t.Logf("TN ::: %s", tc.name)
+		t.Logf("RS ::: %#v", result.ToView())
+		t.Logf("EX ::: %#v", tc.expected)
+		is.Equal(tc.expected, result.ToView())
 	}
 }
 

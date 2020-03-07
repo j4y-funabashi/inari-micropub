@@ -201,14 +201,17 @@ func TestShowMediaYears(t *testing.T) {
 	}
 }
 
-func TestSessionToMf2(t *testing.T) {
+func TestSessionToMf2View(t *testing.T) {
 
-	now := time.Now()
+	now, err := time.Parse("2006-01-02T15:04:05Z", "1984-01-28T10:10:10Z")
+	if err != nil {
+		t.Fatalf("failed to create now:: %s", err.Error())
+	}
 
 	var tests = []struct {
 		name     string
 		sess     app.SessionData
-		expected mf2.MicroFormat
+		expected mf2.MicroFormatView
 	}{
 		{
 			name: "empty session",
@@ -216,14 +219,12 @@ func TestSessionToMf2(t *testing.T) {
 				UID:       "test-uuid-123",
 				Published: &now,
 			},
-			expected: mf2.MicroFormat{
-				Type: []string{"h-entry"},
-				Properties: map[string][]interface{}{
-					"published": []interface{}{now.Format(time.RFC3339)},
-					"uid":       []interface{}{"test-uuid-123"},
-					"url":       []interface{}{"/p/test-uuid-123"},
-					"author":    []interface{}{""},
-				},
+			expected: mf2.MicroFormatView{
+				Type:      "entry",
+				Published: "1984-01-28T10:10:10Z",
+				Uid:       "test-uuid-123",
+				Url:       "/p/test-uuid-123",
+				Archive:   "198401",
 			},
 		},
 		{
@@ -249,37 +250,26 @@ func TestSessionToMf2(t *testing.T) {
 				Published: &now,
 				Content:   "hello test",
 			},
-			expected: mf2.MicroFormat{
-				Type: []string{"h-entry"},
-				Properties: map[string][]interface{}{
-					"published": []interface{}{now.Format(time.RFC3339)},
-					"uid":       []interface{}{"test-uuid-1234"},
-					"url":       []interface{}{"/p/test-uuid-1234"},
-					"author":    []interface{}{""},
-					"content":   []interface{}{"hello test"},
-					"photo":     []interface{}{"https://test1.jpg", "https://test2.jpg"},
-					"location": []interface{}{
-						mf2.MicroFormat{
-							Type: []string{"h-card"},
-							Properties: map[string][]interface{}{
-								"name":         []interface{}{"Nandos"},
-								"latitude":     []interface{}{6.66},
-								"longitude":    []interface{}{5.55},
-								"locality":     []interface{}{"meanwood"},
-								"region":       []interface{}{"West Yorkshire"},
-								"country-name": []interface{}{"uk"},
-							},
-						},
-					},
-				},
+			expected: mf2.MicroFormatView{
+				Type:      "entry",
+				Published: "1984-01-28T10:10:10Z",
+				Uid:       "test-uuid-1234",
+				Url:       "/p/test-uuid-1234",
+				Content:   "hello test",
+				Photo:     []string{"https://test1.jpg", "https://test2.jpg"},
+				Location:  "Nandos, meanwood, West Yorkshire, uk",
+				Archive:   "198401",
 			},
 		},
 	}
 
-	for _, tt := range tests {
+	for _, tc := range tests {
 		is := is.NewRelaxed(t)
-		result := tt.sess.ToMf2()
-		is.Equal(result, tt.expected)
+		result := tc.sess.ToMf2()
+		t.Logf("TN ::: %s", tc.name)
+		t.Logf("RS ::: %#v", result.ToView())
+		t.Logf("EX ::: %#v", tc.expected)
+		is.Equal(result.ToView(), tc.expected)
 	}
 }
 

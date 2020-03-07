@@ -81,28 +81,26 @@ func (l Location) toGeoURL() string {
 	return fmt.Sprintf("geo:%g,%g", l.Lat, l.Lng)
 }
 
-func (l Location) ToMf2() mf2.MicroFormat {
-	mfType := []string{"h-adr"}
+func (l Location) ToMf2() map[string]interface{} {
+
+	out := make(map[string]interface{})
+
+	mfType := "h-adr"
 	if l.Name != "" {
-		mfType = []string{"h-card"}
+		mfType = "h-card"
 	}
+	out["type"] = []interface{}{mfType}
 
-	props := make(map[string][]interface{})
-	if l.Name != "" {
-		props["name"] = append(props["name"], l.Name)
-	}
-	props["latitude"] = append(props["latitude"], l.Lat)
-	props["longitude"] = append(props["longitude"], l.Lng)
-	props["locality"] = append(props["locality"], l.Locality)
-	props["region"] = append(props["region"], l.Region)
-	props["country-name"] = append(props["country-name"], l.Country)
+	props := make(map[string]interface{})
+	props["locality"] = []interface{}{l.Locality}
+	props["region"] = []interface{}{l.Region}
+	props["country-name"] = []interface{}{l.Country}
+	props["latitude"] = []interface{}{l.Lat}
+	props["longitude"] = []interface{}{l.Lng}
+	props["name"] = []interface{}{l.Name}
+	out["properties"] = props
 
-	mf := mf2.MicroFormat{
-		Type:       mfType,
-		Properties: props,
-	}
-
-	return mf
+	return out
 }
 
 type Selecta interface {
@@ -157,7 +155,7 @@ type ShowMediaDetailResponse struct {
 
 type SessionData struct {
 	Token              string     `json:"token"`
-	UID                string     `json:uid`
+	UID                string     `json:"uid"`
 	Media              []Media    `json:"media"`
 	Location           Location   `json:"location"`
 	SuggestedLocations []Location `json:"suggested_locations"`
@@ -466,4 +464,23 @@ func (s Server) QueryPostList(limit int, after string) (*QueryPostListResponse, 
 		PostList: pl.Items,
 		AfterKey: pl.Paging.After,
 	}, nil
+}
+
+type ShowArchiveResponse struct {
+	Years []Year
+}
+
+func (s Server) ShowArchive() ShowArchiveResponse {
+	return ShowArchiveResponse{
+		Years: []Year{
+			Year{
+				Year:  "2020",
+				Count: 50,
+			},
+			Year{
+				Year:  "2019",
+				Count: 1323,
+			},
+		},
+	}
 }
