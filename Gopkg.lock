@@ -8,6 +8,12 @@
   version = "v1.25.43"
 
 [[projects]]
+  name = "github.com/go-test/deep"
+  packages = ["."]
+  revision = "3c58d730f064836fd875a220cfefdef7b2b8075a"
+  version = "v1.0.5"
+
+[[projects]]
   name = "github.com/gorilla/mux"
   packages = ["."]
   revision = "00bdffe0f3c77e27d2cf6f5c70232a2d3e4d9c15"
@@ -75,6 +81,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "bdda375cd7ef2a6bd7b3cc213bbff3877790d8a07f0d7574c5f5c49cd3b3fe34"
+  inputs-digest = "27983aeaa1401e758e345c331fd813ae58487de799c7b2283f921181f1868831"
   solver-name = "gps-cdcl"
   solver-version = 1

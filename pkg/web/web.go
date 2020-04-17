@@ -43,11 +43,16 @@ func NewServer(
 }
 
 func (s Server) Routes(router *mux.Router) {
+
+	baseURL := os.Getenv("BASE_URL")
+
 	router.HandleFunc("/", s.handleHomepage()).Methods("GET")
 	router.HandleFunc("/micropub", s.withBearerToken(s.handleMicropubCommand())).Methods("POST")
 	router.HandleFunc("/micropub", s.withBearerToken(s.handleMicropubQuery())).Methods("GET")
+	router.HandleFunc("/micropub/media", s.withBearerToken(s.handleMediaUpload(baseURL))).Methods("POST")
 	router.HandleFunc("/login", s.handleLoginForm()).Methods("GET")
 	router.HandleFunc("/login", s.handleLogin()).Methods("POST")
+	router.HandleFunc("/session", s.adminOnly(s.handleSessionCheck())).Methods("GET")
 	router.HandleFunc("/admin/composer", s.adminOnly(s.handleComposerForm())).Methods("GET")
 	router.HandleFunc("/admin/composer", s.adminOnly(s.handleComposerSubmit())).Methods("POST")
 	router.HandleFunc("/admin/composer/media", s.adminOnly(s.handleMediaGallery())).Methods("GET")
@@ -105,20 +110,23 @@ func (s Server) handleMicropubCommand() http.HandlerFunc {
 			s.logger.Error("failed fetch access token from context")
 		}
 
+		s.logger.WithField("token", accessToken)
 		bodyBytes, err := ioutil.ReadAll(r.Body)
 		if err != nil {
-			s.logger.WithError(err).Error("failed to read request body")
+			s.logger.
+				WithError(err).
+				Error("failed to read request body")
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		r.Body.Close()
-		action := s.parser.ParseMicropubPostAction(bodyBytes)
-		s.logger.
-			WithField("access_token", accessToken).
-			WithField("action", action).Info("micropub cmd!")
 
+		action := s.parser.ParseMicropubPostAction(bodyBytes)
 		switch action {
 		case "create":
+			s.logger.Error("CREATE NOT YET IMPLEMENTED")
+			w.WriteHeader(http.StatusInternalServerError)
+			return
 		case "update":
 			updateRequest := s.parser.ParseUpdateRequest(bodyBytes)
 			err := s.App.UpdatePost(updateRequest)
@@ -127,7 +135,26 @@ func (s Server) handleMicropubCommand() http.HandlerFunc {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
+		default:
+			s.logger.
+				WithField("action", action).
+				Info("invalid action")
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
+
+	}
+}
+
+func (s Server) handleMediaUpload(baseURL string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		s.logger.Error("MEDIA UPLOAD NOT YET IMPLEMENTED")
+		// parse request
+		// extract media metadata
+		// upload media to s3
+		// append event to eventlog
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -180,7 +207,9 @@ func (s Server) handleMediaDetail() http.HandlerFunc {
 
 func (s Server) handleArchive() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		s.App.ShowArchive()
+		s.logger.Error("ARCHIVE NOT YET IMPLEMENTED")
+		w.WriteHeader(http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -198,20 +227,71 @@ func (s Server) handleComposerForm() http.HandlerFunc {
 	}
 }
 
-func (s Server) handleLogin() http.HandlerFunc {
+func (s Server) handleSessionCheck() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		enteredPassword := r.FormValue("password")
-		authResponse, err := s.App.Auth(enteredPassword)
-		if err != nil {
-			s.logger.WithError(err).Error("failed to auth")
-			w.Header().Set("Location", "/login")
-			w.WriteHeader(http.StatusSeeOther)
+		sess, ok := r.Context().
+			Value(contextKeySessionID).(app.SessionData)
+		if !ok {
+			s.logger.Error("failed fetch session from context")
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		w.Header().Set("Location", "/admin/composer")
-		w.Header().Set("Set-Cookie", authResponse.Session.CookieValue(1209600))
-		w.WriteHeader(http.StatusSeeOther)
+		respJSON, err := json.Marshal(sess)
+		if err != nil {
+			s.logger.Error("failed fetch session from context")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		w.Write(respJSON)
+	}
+}
+
+func (s Server) handleLogin() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		body := bytes.Buffer{}
+		_, err := body.ReadFrom(r.Body)
+		if err != nil {
+			s.logger.
+				WithError(err).
+				WithField("body", body.String()).
+				Error("failed to read json body")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		requestBody := struct {
+			Password string `json:"password"`
+		}{}
+		err = json.Unmarshal(body.Bytes(), &requestBody)
+		if err != nil {
+			s.logger.
+				WithError(err).
+				WithField("body", body.String()).
+				Error("failed to unmarshal json body")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		authResponse, err := s.App.Auth(requestBody.Password)
+		if err != nil {
+			s.logger.
+				WithError(err).
+				WithField("body", body.String()).
+				Error("failed to authenticate")
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		s.logger.Info("successfully logged in user")
+		w.Header().Set(
+			"Set-Cookie",
+			authResponse.Session.CookieValue(1209600),
+		)
+		w.WriteHeader(http.StatusOK)
 		return
 	}
 }
@@ -233,7 +313,9 @@ func (s Server) withBearerToken(h http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 		tokenEndpoint := os.Getenv("TOKEN_ENDPOINT")
-		accessToken, err := s.App.VerifyAccessToken(tokenEndpoint, bearerToken)
+		accessToken, err := s.App.VerifyAccessToken(
+			tokenEndpoint,
+			bearerToken)
 		if err != nil {
 			s.logger.WithError(err).Error("failed to verify access token")
 			w.WriteHeader(http.StatusInternalServerError)
@@ -252,16 +334,14 @@ func (s Server) adminOnly(h http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		cookie, err := r.Cookie("session_id")
 		if err != nil {
-			w.Header().Set("Location", "/login")
-			w.WriteHeader(http.StatusSeeOther)
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		sess, err := s.App.FetchSession(cookie.Value)
 
 		if err != nil || sess.Token != cookie.Value {
-			w.Header().Set("Location", "/login")
 			w.Header().Set("Set-Cookie", sess.CookieValue(0))
-			w.WriteHeader(http.StatusSeeOther)
+			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		s.logger.

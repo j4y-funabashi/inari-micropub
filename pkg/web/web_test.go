@@ -1,6 +1,7 @@
 package web_test
 
 import (
+	"reflect"
 	"testing"
 
 	"github.com/j4y_funabashi/inari-micropub/pkg/app"
@@ -18,7 +19,7 @@ func TestParseMicropubAction(t *testing.T) {
 		{
 			name:        "empty values",
 			requestBody: "",
-			expected:    "",
+			expected:    "create",
 		},
 		{
 			name:        "valid update json",
@@ -28,12 +29,11 @@ func TestParseMicropubAction(t *testing.T) {
 		{
 			name:        "empty action",
 			requestBody: `{"action": "", "url": "example.com"}`,
-			expected:    "",
+			expected:    "create",
 		},
 	}
 
 	for _, tt := range tests {
-		is := is.NewRelaxed(t)
 		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 
@@ -42,7 +42,12 @@ func TestParseMicropubAction(t *testing.T) {
 			result := sut.ParseMicropubPostAction([]byte(tt.requestBody))
 
 			// assert
-			is.Equal(result, tt.expected)
+			if reflect.DeepEqual(result, tt.expected) != true {
+				t.Errorf(
+					"expected '%s', got '%s'",
+					tt.expected,
+					result)
+			}
 		})
 	}
 }

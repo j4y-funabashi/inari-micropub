@@ -93,7 +93,7 @@ func (s Server) Routes(router *mux.Router) {
 
 	router.HandleFunc("/health", s.handleHealthcheck())
 	router.HandleFunc("/oldendpoint", s.handleMicropub(siteURL))
-	router.HandleFunc("/media", s.handleMedia(baseURL)).Methods("POST")
+	router.HandleFunc("/oldmediaendpoint", s.handleMedia(baseURL)).Methods("POST")
 	router.HandleFunc("/media", s.handleMediaQuery()).Methods("GET")
 	router.HandleFunc("/media/{year}/{fileKey}", s.handleMediaDownload()).Methods("GET")
 }
@@ -246,8 +246,6 @@ func (s Server) handleMedia(baseURL string) http.HandlerFunc {
 			mediaURL := strings.TrimRight(baseURL, "/") + "/media/" + fileKey
 			mediaMeta.URL = mediaURL
 
-			s.logger.Info(mediaMeta)
-
 			// REWIND FILE
 			_, err = file.Seek(0, 0)
 			if err != nil {
@@ -255,6 +253,9 @@ func (s Server) handleMedia(baseURL string) http.HandlerFunc {
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
+			s.logger.
+				WithField("fileMeta", mediaMeta).
+				Info("extracted media file metadata")
 
 			// upload media file to s3
 			err = s.mediaServer.UploadMedia(mediaMeta.FileKey, file)

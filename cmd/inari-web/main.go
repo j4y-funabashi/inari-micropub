@@ -95,7 +95,7 @@ func main() {
 	router := mux.NewRouter()
 	router.StrictSlash(true)
 	micropubServer.Routes(router.PathPrefix("/micropub").Subrouter())
-	webServer.Routes(router)
+	webServer.Routes(router.PathPrefix("/api").Subrouter())
 
 	go eventLog.Replay()
 

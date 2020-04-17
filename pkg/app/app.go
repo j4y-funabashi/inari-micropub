@@ -3,18 +3,22 @@ package app
 
 import (
 	"bytes"
+	"crypto/md5"
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
+	"path"
 	"strings"
 	"time"
 
 	"github.com/j4y_funabashi/inari-micropub/pkg/eventlog"
 	"github.com/j4y_funabashi/inari-micropub/pkg/mf2"
+	"github.com/rwcarlsen/goexif/exif"
 	uuid "github.com/satori/go.uuid"
 	"github.com/sirupsen/logrus"
 )
@@ -478,21 +482,110 @@ func (s Server) QueryPostList(limit int, after string) (*QueryPostListResponse, 
 	}, nil
 }
 
-type ShowArchiveResponse struct {
-	Years []Year
+type MediaMetadataResponse struct {
+	FileHash string
+	MimeType string
+	DateTime *time.Time
+	Lat      float64
+	Lng      float64
+	URL      string
+	FileKey  string
 }
 
-func (s Server) ShowArchive() ShowArchiveResponse {
-	return ShowArchiveResponse{
-		Years: []Year{
-			Year{
-				Year:  "2020",
-				Count: 50,
-			},
-			Year{
-				Year:  "2019",
-				Count: 1323,
-			},
-		},
+func ExtractMediaMetadata(file io.ReadSeeker, fileName, baseURL string) (MediaMetadataResponse, error) {
+	meta := MediaMetadataResponse{}
+	fileExt := strings.ToLower(path.Ext(fileName))
+
+	// HASH
+	hash := md5.New()
+	if _, err := io.Copy(hash, file); err != nil {
+		return meta, err
 	}
+	hashInBytes := hash.Sum(nil)[:16]
+	meta.FileHash = hex.EncodeToString(hashInBytes)
+
+	// REWIND FILE
+	_, err := file.Seek(0, 0)
+	if err != nil {
+		return meta, err
+	}
+
+	// GET MIME TYPE
+	mimeType, err := fetchMimeType(file)
+	if err != nil {
+		return meta, err
+	}
+	meta.MimeType = mimeType
+
+	// REWIND FILE
+	_, err = file.Seek(0, 0)
+	if err != nil {
+		return meta, err
+	}
+
+	if mimeType == "image/jpeg" {
+		// READ EXIF
+		exifData, err := fetchEXIF(file)
+		if err != nil {
+			return meta, err
+		}
+		meta.DateTime = exifData.dateTime
+		meta.Lat = exifData.lat
+		meta.Lng = exifData.lng
+	}
+
+	// TODO make this work better, use url pkg
+	fileKey := path.Join(
+		meta.DateTime.Format("2006"),
+		meta.FileHash,
+	) + fileExt
+	meta.FileKey = fileKey
+
+	// TODO make this work better, use url pkg
+	mediaURL := strings.TrimRight(baseURL, "/") + "/media/" + fileKey
+	meta.URL = mediaURL
+
+	return meta, nil
+}
+
+type exifData struct {
+	dateTime *time.Time
+	lat      float64
+	lng      float64
+}
+
+func fetchEXIF(file io.Reader) (exifData, error) {
+
+	out := exifData{}
+
+	// GET EXIF DATA
+	exifData, err := exif.Decode(file)
+	if err != nil {
+		return out, err
+	}
+
+	dateTime, err := exifData.DateTime()
+	if err == nil {
+		out.dateTime = &dateTime
+	}
+
+	lat, lng, err := exifData.LatLong()
+	if err == nil {
+		out.lat = lat
+		out.lng = lng
+	}
+
+	return out, nil
+}
+
+func fetchMimeType(file io.Reader) (string, error) {
+	// get mime type
+	buf := make([]byte, 512)
+	_, err := file.Read(buf)
+	if err != nil {
+		return "", err
+	}
+	contentType := http.DetectContentType(buf)
+
+	return contentType, nil
 }

@@ -1,9 +1,11 @@
 package app_test
 
 import (
+	"os"
 	"testing"
 	"time"
 
+	"github.com/go-test/deep"
 	"github.com/j4y_funabashi/inari-micropub/pkg/app"
 	"github.com/j4y_funabashi/inari-micropub/pkg/eventlog"
 	"github.com/j4y_funabashi/inari-micropub/pkg/mf2"
@@ -321,5 +323,50 @@ func TestShowMediaMonths(t *testing.T) {
 			is.Equal(tt.expected.Months, result.Months)
 			is.Equal(tt.expected.CurrentMonth, result.CurrentMonth)
 		})
+	}
+}
+
+func TestExtractMediaMetadata(t *testing.T) {
+
+	t1, err := time.Parse(time.RFC3339, "2019-11-09T01:57:37Z")
+	if err != nil {
+		t.Fatalf("failed to parse time: %s", err.Error())
+	}
+
+	var tests = []struct {
+		name     string
+		fileName string
+		expected app.MediaMetadataResponse
+	}{
+		{
+			name:     "works",
+			fileName: "test_data/photo-1.jpg",
+			expected: app.MediaMetadataResponse{
+				FileHash: "6c5e11de40eda50688d2980613bb9181",
+				MimeType: "image/jpeg",
+				URL:      "test-domain/media/2019/6c5e11de40eda50688d2980613bb9181.jpg",
+				FileKey:  "2019/6c5e11de40eda50688d2980613bb9181.jpg",
+				DateTime: &t1,
+				Lat:      53.79932783333333,
+				Lng:      -1.538786861111111,
+			},
+		},
+	}
+
+	baseURL := "test-domain"
+	for _, tt := range tests {
+		// arrange
+		file, err := os.Open(tt.fileName)
+		if err != nil {
+			t.Fatalf("failed to open file: %s", tt.fileName)
+		}
+
+		// act
+		result, _ := app.ExtractMediaMetadata(file, tt.fileName, baseURL)
+
+		// assert
+		if diff := deep.Equal(tt.expected, result); diff != nil {
+			t.Error(diff)
+		}
 	}
 }

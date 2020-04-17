@@ -54,8 +54,11 @@ func (p Parser) ParseMicropubPostAction(bodyBytes []byte) string {
 	}{}
 	err := decoder.Decode(&e)
 	if err != nil {
-		return ""
+		return "create"
 	}
 
-	return e.Action
+	if e.Action != "" {
+		return e.Action
+	}
+	return "create"
 }

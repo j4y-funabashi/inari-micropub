@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 	"log"
+	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -41,11 +42,18 @@ func NewClient(s3Endpoint string) (Client, error) {
 	downloader := s3manager.NewDownloader(sess)
 	uploader := s3manager.NewUploader(sess)
 	s3Client := s3.New(sess)
-	return Client{
+
+	cl := Client{
 		s3Client:   s3Client,
 		downloader: downloader,
 		uploader:   uploader,
-	}, nil
+	}
+
+	if s3Endpoint != "" {
+		cl.CreateBucket(os.Getenv("S3_MEDIA_BUCKET"))
+		cl.CreateBucket(os.Getenv("S3_EVENTS_BUCKET"))
+	}
+	return cl, nil
 }
 
 func (client Client) CreateBucket(bucket string) error {
